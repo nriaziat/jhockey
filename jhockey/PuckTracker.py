@@ -1,8 +1,8 @@
 import cv2 as cv
+import numpy as np
 
-class PuckDetector:
+class PuckTracker:
     '''
-    PuckDetector class
     Uses OpenCV's KCF tracker to track the puck
     '''
     def __init__(self):
@@ -10,9 +10,11 @@ class PuckDetector:
         self.bbox = None
         self.tracker_initialized = False
     
-    def initialize_tracker(self, frame):
-        # Initialize tracker with first frame and bounding box using color thresholding
-        # to look for the orange puck
+    def initialize_tracker(self, frame: np.ndarray):
+        '''
+        Find the puck in the frame and initialize the tracker.
+        @param frame: initial frame to find the puck in
+        '''
         hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
         lower_orange = np.array([0, 100, 100])
         upper_orange = np.array([10, 255, 255])
@@ -28,10 +30,16 @@ class PuckDetector:
             print("No contours found")
         
     def update_tracker(self, frame):
-        # Update tracker with new frame
+        '''
+        Update the tracker with the new frame.
+        @param frame: new frame to update the tracker with
+        '''
         ok, self.bbox = self.tracker.update(frame)
         return ok, self.bbox
     
     def get_bbox(self):
+        '''
+        Get the bounding box of the puck.
+        '''
         return self.bbox
     
