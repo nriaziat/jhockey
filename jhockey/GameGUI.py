@@ -1,6 +1,7 @@
 from fastapi import Response
 from nicegui import Client, app, run, ui
-from GameManager import GameState, GameManager, Team
+from GameManager import GameState, Team, GameManager
+from typing import Protocol
 from functools import partial
 import time
 import base64
@@ -16,22 +17,49 @@ def convert(frame: np.ndarray) -> bytes:
     _, imencode_image = cv.imencode('.jpg', frame)
     return imencode_image.tobytes()
 
+class ManagerInterface(Protocol):
+    @property
+    def match_length(self) -> int:
+        ...
+
+    @property
+    def video_feed(self) -> bool:
+        ... 
+
+    @property
+    def state(self) -> GameState:
+        ...
+
+    @property
+    def camera(self) -> cv.VideoCapture:
+        ...
+
+    @property
+    def score(self) -> dict:
+        ...
+
+    @property
+    def get_time_remaining(self) -> float:
+        ...
+
+    def reset(self):
+        ...
 
 class GameGUI:
     '''
     Web GUI to control the game, add score, monitor time, and start/stop gameplay.
     Optionally, monitor video feed. 
     '''
-    def __init__(self, start_time: int = 10, video_feed: bool = False):
-        self.start_time = start_time
-        self.video_feed = video_feed
-        self.game_manager: GameManager = GameManager(start_time=start_time, video_feed=video_feed)
+    def __init__(self, game_manager: ManagerInterface):
+        self.match_length: int = game_manager.match_length
+        self.video_feed: bool = game_manager.video_feed
+        self.game_manager: ManagerInterface = game_manager
         # add a start/pause button and a reset button
         self.start_pause_button: ui.button = ui.button('Start', on_click=self.start_pause, color='green')
         self.reset_button: ui.button = ui.button('Reset', on_click=self.reset, color='red')
         # add a timer
-        self.timer = ui.timer(1, self.update_timer)
-        self.time_display = ui.label(f"{start_time // 60:02}:{start_time % 60:02}")
+        self.timer = ui.timer(0.1, self.update)
+        self.time_display = ui.label(f"{self.match_length // 60:02}:{self.match_length % 60:02}")
         # add a completion progress bar
         self.progress_bar = ui.linear_progress(show_value=False, size="25px")
         # add a score display
@@ -40,7 +68,7 @@ class GameGUI:
         self.red_score_button: ui.button = ui.button('Red Score', on_click=partial(self.update_score, team=Team.RED), color='red')
         self.blue_score_button: ui.button = ui.button('Blue Score', on_click=partial(self.update_score, team=Team.BLUE), color='blue')
         # add a live video feed
-        if video_feed:
+        if self.video_feed:
             self.video_feed = ui.interactive_image().classes('w-full h-full')
             self.video_timer = ui.timer(interval=0.1, callback=lambda: self.video_feed.set_source(f'/video/frame?{time.time()}'))
 
@@ -70,32 +98,39 @@ class GameGUI:
         self.set_state(GameState.STOPPED)
         if self.video_feed:
             self.game_manager.camera.release()
-        self.game_manager = GameManager(start_time=self.start_time, video_feed=self.video_feed)
-        self.set_time(self.start_time)
+        self.game_manager.reset()
+        self.score_display.text = f"{self.game_manager.score[Team.RED.value]} - {self.game_manager.score[Team.BLUE.value]}"
+        self.update_time_indicator()
 
-    def update_timer(self):
+    def update(self):
         if self.game_manager.state == GameState.RUNNING:
-            self.set_time(self.game_manager.time - 1)   
-            if self.game_manager.time < 0:
-                self.reset()
+            self.update_time_indicator()     
+        self.update_button(self.game_manager.state)
+                
 
-    def set_time(self, time: int):
-        self.game_manager.time = time
-        self.time_display.text = f"{self.game_manager.time // 60:02}:{self.game_manager.time % 60:02}"
-        self.progress_bar.value = (self.start_time - self.game_manager.time) / self.start_time
+    def update_time_indicator(self):
+        g_time = self.game_manager.get_time_remaining()
+        if g_time == -1:
+            self.set_state(GameState.STOPPED)
+            return
+        self.time_display.text = f"{g_time // 60:02}:{g_time % 60:02}"
+        self.progress_bar.value = (self.match_length - g_time) / self.match_length
 
     def update_score(self, team: Team):
         if self.game_manager.state != GameState.RUNNING:
-            return
-        self.game_manager.score[team.value] += 1
-        self.score_display.text = f"{self.game_manager.score[Team.RED.value]} - {self.game_manager.score[Team.BLUE.value]}"
-        self.set_state(GameState.PAUSED)
+            self.score_display.text = f"{self.game_manager.score[Team.RED.value]} - {self.game_manager.score[Team.BLUE.value]}"
+        else:
+            self.game_manager.score[team.value] += 1
+            self.score_display.text = f"{self.game_manager.score[Team.RED.value]} - {self.game_manager.score[Team.BLUE.value]}"
+            self.set_state(GameState.PAUSED)
 
     def set_state(self, state: GameState):
         self.game_manager.state = state
+
+    def update_button(self, state: GameState):
         if state == GameState.STOPPED:
             self.start_pause_button.text = 'Start'
-            self.set_time(self.start_time)
+            self.update_time_indicator()
         elif state == GameState.RUNNING:
             self.start_pause_button.text = 'Pause'
         elif state == GameState.PAUSED:
@@ -121,7 +156,8 @@ class GameGUI:
         ui.timer(1, lambda: signal.default_int_handler(signum, frame), once=True)
 
 if __name__ in {'__main__', "__mp_main__"}:
-    g = GameGUI()    
+    gm = GameManager()
+    g = GameGUI(game_manager=gm)    
     app.on_shutdown(g.cleanup)
     signal.signal(signal.SIGINT, g.handle_sigint)
 
