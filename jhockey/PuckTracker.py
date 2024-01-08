@@ -1,14 +1,17 @@
 import cv2 as cv
 import numpy as np
+from utils import PuckState
+from FieldHomography import FieldHomography
 
 class PuckTracker:
     '''
     Uses OpenCV's KCF tracker to track the puck
     '''
-    def __init__(self):
+    def __init__(self, field_homography: FieldHomography):
         self.tracker = cv.TrackerKCF_create()
         self.bbox = None
         self.tracker_initialized = False
+        self.field_homography = field_homography
     
     def initialize_tracker(self, frame: np.ndarray):
         '''
@@ -37,9 +40,15 @@ class PuckTracker:
         ok, self.bbox = self.tracker.update(frame)
         return ok, self.bbox
     
-    def get_bbox(self):
+    def get_puck_state(self) -> PuckState:
         '''
-        Get the bounding box of the puck.
+        Get the current state of the puck.
         '''
-        return self.bbox
+        if self.field_homography.H is not None:
+            center = self.bbox[0] + self.bbox[2] // 2, self.bbox[1] + self.bbox[3] // 2
+            coor = self.field_homography.convert_coordinates(center[0], center[1])
+        if self.tracker_initialized:
+            return PuckState(coor[0], coor[1], True)
+        else:
+            return PuckState(0, 0, False)
     

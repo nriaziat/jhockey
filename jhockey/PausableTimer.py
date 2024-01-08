@@ -1,5 +1,4 @@
 from datetime import datetime
-import time
 
 class PausableTimer:
     def __init__(self):

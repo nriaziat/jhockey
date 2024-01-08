@@ -1,6 +1,7 @@
 from fastapi import Response
 from nicegui import Client, app, run, ui
-from GameManager import GameState, Team, GameManager
+from GameManager import GameManager
+from utils import GameState, Team
 from typing import Protocol
 from functools import partial
 import time
@@ -99,7 +100,7 @@ class GameGUI:
         if self.video_feed:
             self.game_manager.camera.release()
         self.game_manager.reset()
-        self.score_display.text = f"{self.game_manager.score[Team.RED.value]} - {self.game_manager.score[Team.BLUE.value]}"
+        self.score_display.text = f"{self.game_manager.score[Team.RED]} - {self.game_manager.score[Team.BLUE]}"
         self.update_time_indicator()
 
     def update(self):
@@ -118,10 +119,10 @@ class GameGUI:
 
     def update_score(self, team: Team):
         if self.game_manager.state != GameState.RUNNING:
-            self.score_display.text = f"{self.game_manager.score[Team.RED.value]} - {self.game_manager.score[Team.BLUE.value]}"
+            self.score_display.text = f"{self.game_manager.score[Team.RED]} - {self.game_manager.score[Team.BLUE]}"
         else:
-            self.game_manager.score[team.value] += 1
-            self.score_display.text = f"{self.game_manager.score[Team.RED.value]} - {self.game_manager.score[Team.BLUE.value]}"
+            self.game_manager.score[team] += 1
+            self.score_display.text = f"{self.game_manager.score[Team.RED]} - {self.game_manager.score[Team.BLUE]}"
             self.set_state(GameState.PAUSED)
 
     def set_state(self, state: GameState):
