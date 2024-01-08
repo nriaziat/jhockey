@@ -1,7 +1,7 @@
 import json
 import numpy as np
 import cv2 as cv
-from utils import FieldTag
+from .utils import FieldTag
 
 class FieldHomography:
     def __init__(self):

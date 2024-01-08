@@ -1,12 +1,11 @@
 from typing_extensions import Protocol
-import cv2 as cv
-from PausableTimer import PausableTimer
-from PuckTracker import PuckTracker
-from RobotTracker import RobotTracker
-from FieldHomography import FieldHomography
-from Broadcaster import Broadcaster
-from ArucoDetector import ArucoDetector
-from utils import Team, GameState, PuckState, RobotState
+from .PausableTimer import PausableTimer
+from .PuckTracker import PuckTracker
+from .RobotTracker import RobotTracker
+from .FieldHomography import FieldHomography
+from .Broadcaster import Broadcaster
+from .ArucoDetector import ArucoDetector
+from .utils import Team, GameState, PuckState, RobotState
 from typing import Optional
 
 class Broadcaster(Protocol):
@@ -22,24 +21,27 @@ class GameManager:
     Class to manage score, time, and other game information.
     Arbitrates communication between the game controller and the teams.
     '''
-    def __init__(self, match_length: int = 10, video_feed: bool = False):
-        self.match_length = match_length
+    def __init__(self, match_length_sec: int = 10,
+                 broadcaster: Optional[Broadcaster] = None, 
+                 puck_tracker: Optional[PuckTracker] = None,
+                 robot_tracker: Optional[RobotTracker] = None, 
+                 field_homography: Optional[FieldHomography] = None,
+                 aruco_detector: Optional[ArucoDetector] = None):
+    
+        self.match_length_sec = match_length_sec
         self.start_itme = None
         self.score = {Team.RED: 0, Team.BLUE: 0}
         self.timer = PausableTimer()
-        self.broadcaster: Optional[Broadcaster] = None
-        self.puck_tracker: Optional[PuckTracker] = None
-        self.field_homography: Optional[FieldHomography] = None
-        self.robot_tracker: Optional[RobotTracker] = None
+        self.broadcaster: Optional[Broadcaster] = broadcaster
+        self.puck_tracker: Optional[PuckTracker] = puck_tracker
+        self.field_homography: Optional[FieldHomography] = field_homography
+        self.robot_tracker: Optional[RobotTracker] = robot_tracker
+        self.aruco_detector: Optional[ArucoDetector] = aruco_detector
         self.aruco_tags = None
-        self.aruco_detector = None
         self.puck_state = PuckState(0, 0, False)
         self.robot_states = {Team.BLUE: [RobotState(0, 0, 0, False), RobotState(0, 0, 0, False)],
                              Team.RED: [RobotState(0, 0, 0, False), RobotState(0, 0, 0, False)]}
         self._state: GameState = GameState.STOPPED
-        self.video_feed = video_feed
-        if self.video_feed:
-            self.camera = cv.VideoCapture(1)
 
     @property
     def state(self) -> GameState:
@@ -56,21 +58,6 @@ class GameManager:
                 self.pause()
         self._state = state
 
-    def set_broadcaster(self, broadcaster: Broadcaster):
-        self.broadcaster = broadcaster
-
-    def set_puck_tracker(self, puck_tracker: PuckTracker):
-        self.puck_tracker = puck_tracker
-
-    def set_robot_tracker(self, robot_tracker: RobotTracker):
-        self.robot_tracker = robot_tracker
-
-    def set_field_homography(self, field_homography: FieldHomography):
-        self.field_homography = field_homography
-
-    def set_aruco_detector(self, aruco_detector: ArucoDetector):
-        self.aruco_detector = aruco_detector
-
     def start_game(self):
         '''
         Starts the game.
@@ -81,13 +68,13 @@ class GameManager:
             self.timer.start()
 
     @property
-    def seconds_remaining(self) -> int:
+    def seconds_remaining(self) -> float:
         '''
         Returns the time remaining in the game.
         '''
         if not self.timer.timestarted:
-            return self.match_length
-        remaining = self.match_length - self.timer.get().seconds
+            return self.match_length_sec
+        remaining = self.match_length_sec - self.timer.get().seconds
         return remaining
     def pause(self):
         '''
@@ -144,12 +131,12 @@ class GameManager:
             if seconds_remaining <= 0:
                 self.state = GameState.STOPPED
                 seconds_remaining = 0
-            self.broadcaster.broadcast({
-                'state': self.state,
-                'time': seconds_remaining,
-                'puck': self.puck_state,
-                Team.RED: self.robot_states[Team.RED],
-                Team.BLUE: self.robot_states[Team.BLUE]
-            })
-
+            if self.broadcaster is not None:
+                self.broadcaster.broadcast({
+                    'state': self.state,
+                    'time': seconds_remaining,
+                    'puck': self.puck_state,
+                    Team.RED: self.robot_states[Team.RED],
+                    Team.BLUE: self.robot_states[Team.BLUE]
+                })
     

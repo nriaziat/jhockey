@@ -1,79 +1,47 @@
-from fastapi import Response
-from nicegui import Client, app, run, ui
-from GameManager import GameManager
-from utils import GameState, Team
-from typing import Protocol
+from nicegui import ui
+from .GameManager import GameManager
+from .utils import GameState, Team
 from functools import partial
 import time
-import base64
-import cv2 as cv
-import numpy as np
-import signal
-
-
-black_1px = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII='
-placeholder = Response(content=base64.b64decode(black_1px.encode('ascii')), media_type='image/png')
-
-def convert(frame: np.ndarray) -> bytes:
-    _, imencode_image = cv.imencode('.jpg', frame)
-    return imencode_image.tobytes()
-
-class ManagerInterface(Protocol):
-    @property
-    def match_length(self) -> int:
-        ...
-
-    @property
-    def video_feed(self) -> bool:
-        ... 
-
-    @property
-    def state(self) -> GameState:
-        ...
-
-    @property
-    def camera(self) -> cv.VideoCapture:
-        ...
-
-    @property
-    def score(self) -> dict:
-        ...
-
-    @property
-    def get_time_remaining(self) -> float:
-        ...
-
-    def reset(self):
-        ...
 
 class GameGUI:
     '''
     Web GUI to control the game, add score, monitor time, and start/stop gameplay.
     Optionally, monitor video feed. 
     '''
-    def __init__(self, game_manager: ManagerInterface):
-        self.match_length: int = game_manager.match_length
-        self.video_feed: bool = game_manager.video_feed
-        self.game_manager: ManagerInterface = game_manager
-        # add a start/pause button and a reset button
-        self.start_pause_button: ui.button = ui.button('Start', on_click=self.start_pause, color='green')
-        self.reset_button: ui.button = ui.button('Reset', on_click=self.reset, color='red')
-        # add a timer
-        self.timer = ui.timer(0.1, self.update)
-        self.time_display = ui.label(f"{self.match_length // 60:02}:{self.match_length % 60:02}")
-        # add a completion progress bar
-        self.progress_bar = ui.linear_progress(show_value=False, size="25px")
-        # add a score display
-        self.score_display: ui.label = ui.label('0 - 0')
-        # add score buttons
-        self.red_score_button: ui.button = ui.button('Red Score', on_click=partial(self.update_score, team=Team.RED), color='red')
-        self.blue_score_button: ui.button = ui.button('Blue Score', on_click=partial(self.update_score, team=Team.BLUE), color='blue')
-        # add a live video feed
-        if self.video_feed:
-            self.video_feed = ui.interactive_image().classes('w-full h-full')
-            self.video_timer = ui.timer(interval=0.1, callback=lambda: self.video_feed.set_source(f'/video/frame?{time.time()}'))
+    def __init__(self, game_manager: GameManager, video_feed: bool = True):
+        self.match_length_sec: int = game_manager.match_length_sec
+        self.video_feed: bool = video_feed
+        self.game_manager: GameManager = game_manager
 
+        with ui.row():
+            self.start_pause_button: ui.button = ui.button('Start', on_click=self.start_pause, color='green')
+            self.reset_button: ui.button = ui.button('Reset', on_click=self.reset, color='red')
+
+        self.timer = ui.timer(0.1, self.update)
+        self.progress_bar = ui.circular_progress(show_value=True, size="xl", min=0, max=self.match_length_sec).bind_value_from(self.game_manager, 'seconds_remaining')
+
+        self.score_display: ui.label = ui.label('0 - 0')
+        with ui.row():
+            self.red_score_button: ui.button = ui.button('Red Score', on_click=partial(self.update_score, team=Team.RED), color='red')
+            self.blue_score_button: ui.button = ui.button('Blue Score', on_click=partial(self.update_score, team=Team.BLUE), color='blue')
+
+        if self.video_feed:
+            self.video_feed: ui.interactive_image = ui.interactive_image().classes('w-full h-full')
+            self.video_timer = ui.timer(interval=0.1, callback=lambda: self.video_feed.set_source(f'/video/frame?{time.time()}'))
+        
+        self.debug_button: ui.button = ui.button('Debug Mode', on_click=self.toggle_debug, color='yellow')
+        self.debug: bool = False
+        with ui.column().bind_visibility_from(self, 'debug'):
+            self.debug_label: ui.label = ui.label('Debug Mode')
+            self.robot1_label: ui.label = ui.label('Robot 1')
+            self.robot2_label: ui.label = ui.label('Robot 2')
+            self.robot3_label: ui.label = ui.label('Robot 3')
+            self.robot4_label: ui.label = ui.label('Robot 4')
         ui.run()
+
+    def toggle_debug(self):
+        self.debug = not self.debug
 
     def start_pause(self):
         if self.game_manager.state == GameState.RUNNING:
@@ -81,42 +49,21 @@ class GameGUI:
         else:
             self.set_state(GameState.RUNNING)
 
-    @app.get('/video/frame')
-    async def update_video_feed(self):
-        if not self.game_manager.camera.isOpened():
-            return placeholder
-        # The `video_capture.read` call is a blocking function.
-        # So we run it in a separate thread (default executor) to avoid blocking the event loop.
-        _, frame = await run.io_bound(self.game_manager.camera.read)
-        if frame is None:
-            return placeholder
-        # `convert` is a CPU-intensive function, so we run it in a separate process to avoid blocking the event loop and GIL.
-        jpeg = await run.cpu_bound(convert, frame)
-        return Response(content=jpeg, media_type='image/jpeg')
-
-
     def reset(self):
         self.set_state(GameState.STOPPED)
-        if self.video_feed:
-            self.game_manager.camera.release()
         self.game_manager.reset()
         self.score_display.text = f"{self.game_manager.score[Team.RED]} - {self.game_manager.score[Team.BLUE]}"
-        self.update_time_indicator()
 
     def update(self):
+        self.game_manager.update()
         if self.game_manager.state == GameState.RUNNING:
-            self.update_time_indicator()     
-        self.update_button(self.game_manager.state)
+            if self.debug:
+                self.robot1_label.text = f"Robot 1: {self.game_manager.robot_states[Team.BLUE][0]}"
+                self.robot2_label.text = f"Robot 2: {self.game_manager.robot_states[Team.BLUE][1]}"
+                self.robot3_label.text = f"Robot 3: {self.game_manager.robot_states[Team.RED][0]}"
+                self.robot4_label.text = f"Robot 4: {self.game_manager.robot_states[Team.RED][1]}"
+        self.update_start_button(self.game_manager.state)
                 
-
-    def update_time_indicator(self):
-        g_time = self.game_manager.get_time_remaining()
-        if g_time == -1:
-            self.set_state(GameState.STOPPED)
-            return
-        self.time_display.text = f"{g_time // 60:02}:{g_time % 60:02}"
-        self.progress_bar.value = (self.match_length - g_time) / self.match_length
-
     def update_score(self, team: Team):
         if self.game_manager.state != GameState.RUNNING:
             self.score_display.text = f"{self.game_manager.score[Team.RED]} - {self.game_manager.score[Team.BLUE]}"
@@ -128,37 +75,10 @@ class GameGUI:
     def set_state(self, state: GameState):
         self.game_manager.state = state
 
-    def update_button(self, state: GameState):
+    def update_start_button(self, state: GameState):
         if state == GameState.STOPPED:
             self.start_pause_button.text = 'Start'
-            self.update_time_indicator()
         elif state == GameState.RUNNING:
             self.start_pause_button.text = 'Pause'
         elif state == GameState.PAUSED:
             self.start_pause_button.text = 'Resume'
-
-    async def disconnect(self) -> None:
-        """Disconnect all clients from current running server."""
-        for client_id in Client.instances:
-            await app.sio.disconnect(client_id)
-
-    async def cleanup(self) -> None:
-        # This prevents ugly stack traces when auto-reloading on code change,
-        # because otherwise disconnected clients try to reconnect to the newly started server.
-        await self.disconnect()
-        # Release the webcam hardware so it can be used by other applications again.
-        if self.video_feed:
-            self.game_manager.camera.release()
-
-    def handle_sigint(self, signum, frame) -> None:
-        # `disconnect` is async, so it must be called from the event loop; we use `ui.timer` to do so.
-        ui.timer(0.1, self.disconnect, once=True)
-        # Delay the default handler to allow the disconnect to complete.
-        ui.timer(1, lambda: signal.default_int_handler(signum, frame), once=True)
-
-if __name__ in {'__main__', "__mp_main__"}:
-    gm = GameManager()
-    g = GameGUI(game_manager=gm)    
-    app.on_shutdown(g.cleanup)
-    signal.signal(signal.SIGINT, g.handle_sigint)
-

@@ -2,8 +2,8 @@ from datetime import datetime
 
 class PausableTimer:
     def __init__(self):
-        self.timestarted = None
-        self.timepaused = None
+        self.timestarted: datetime = None
+        self.timepaused: datetime = None
         self.paused = False
 
     def start(self):
@@ -29,7 +29,7 @@ class PausableTimer:
         self.timestarted = self.timestarted + pausetime
         self.paused = False
 
-    def get(self):
+    def get(self) -> datetime:
         """ Returns a timedelta object showing the amount of time
             elapsed since the start time, less any pauses """
         if self.timestarted is None:
