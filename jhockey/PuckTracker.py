@@ -2,6 +2,7 @@ import cv2 as cv
 import numpy as np
 from .utils import PuckState
 from typing import Protocol
+from threading import Thread
 
 class FieldHomography(Protocol):
     def convert_px2world(self, x: int, y: int) -> np.ndarray:
@@ -19,6 +20,12 @@ class FieldHomography(Protocol):
         '''
         ...
 
+class Camera(Protocol):
+    def read(self) -> np.ndarray:
+        '''
+        Returns the frame from the camera.
+        '''
+        ...
 
 class PuckTracker:
     '''
@@ -29,6 +36,23 @@ class PuckTracker:
         self.bbox = None
         self.tracker_initialized = False
         self.field_homography = field_homography
+        self.stopped = False
+
+    def start(self, cam: Camera):
+        t = Thread(target=self.run, name="Puck Tracker", args=(cam,))
+        t.daemon = True
+        t.start()
+        return self
+    
+    def run(self, cam: Camera):
+        while True:
+            if self.stopped:
+                return
+            frame = cam.read()
+            if self.tracker_initialized:
+                self.update_tracker(frame)
+            else:
+                self.initialize_tracker(frame)
     
     def initialize_tracker(self, frame: np.ndarray):
         '''
@@ -57,15 +81,16 @@ class PuckTracker:
         ok, self.bbox = self.tracker.update(frame)
         return ok, self.bbox
     
-    def get_puck_state(self) -> PuckState:
+    def get(self) -> PuckState:
         '''
         Get the current state of the puck.
         '''
-        if self.field_homography.H is not None:
+        if self.field_homography.H is None or not self.tracker_initialized:
+            return PuckState(0, 0, False)
+        else:
             center = self.bbox[0] + self.bbox[2] // 2, self.bbox[1] + self.bbox[3] // 2
             coor = self.field_homography.convert_px2world(center[0], center[1])
-        if self.tracker_initialized:
             return PuckState(coor[0], coor[1], True)
-        else:
-            return PuckState(0, 0, False)
-    
+        
+    def stop(self):
+        self.stopped = True
