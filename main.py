@@ -7,6 +7,10 @@ import numpy as np
 
 from jhockey.GameGUI import GameGUI
 from jhockey.GameManager import GameManager
+from jhockey.PausableTimer import PausableTimer
+from jhockey.ArucoDetector import ArucoDetector
+
+from utils import load_coefficients
 
 black_1px = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII='
 placeholder = Response(content=base64.b64decode(black_1px.encode('ascii')), media_type='image/png')
@@ -45,8 +49,13 @@ async def update_video_feed() -> Response:
     jpeg = await run.cpu_bound(convert, frame)
     return Response(content=jpeg, media_type='image/jpeg')
     
-camera = cv.VideoCapture(0)
-gm = GameManager()
-g = GameGUI(game_manager=gm)    
 app.on_shutdown(cleanup)
 signal.signal(signal.SIGINT, handle_sigint)
+# mtx, dst = load_coefficients('calibration_charuco.yml')
+ad = ArucoDetector()
+camera = cv.VideoCapture(0)
+timer = PausableTimer()
+gm = GameManager(timer=timer,
+                 aruco_detector=ad, 
+                 camera=camera)
+g = GameGUI(game_manager=gm)

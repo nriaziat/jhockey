@@ -38,3 +38,9 @@ class PausableTimer:
             return self.timepaused - self.timestarted
         else:
             return datetime.now() - self.timestarted
+        
+    def reset(self):
+        """ Resets the timer """
+        self.timestarted = None
+        self.timepaused = None
+        self.paused = False

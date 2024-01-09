@@ -1,18 +1,79 @@
 from typing_extensions import Protocol
-from .PausableTimer import PausableTimer
-from .PuckTracker import PuckTracker
-from .RobotTracker import RobotTracker
-from .FieldHomography import FieldHomography
-from .Broadcaster import Broadcaster
-from .ArucoDetector import ArucoDetector
 from .utils import Team, GameState, PuckState, RobotState
 from typing import Optional
+import numpy as np
+import cv2 as cv
+
+class PausableTimer(Protocol):
+        def start(self):
+            '''
+            Starts the timer.
+            '''
+            ...
+    
+        def pause(self):
+            '''
+            Pauses the timer.
+            '''
+            ...
+    
+        def resume(self):
+            '''
+            Resumes the timer.
+            '''
+            ...
+    
+        def get(self) -> float:
+            '''
+            Returns the time elapsed.
+            '''
+            ...
+        
+        def reset(self):
+            '''
+            Resets the timer.
+            '''
+            ...
+    
+        @property
+        def timestarted(self) -> bool:
+            '''
+            Returns whether the timer has started.
+            '''
+            ...
+
+class PuckTracker(Protocol):
+    def update(self) -> PuckState:
+        '''
+        Updates the puck state.
+        '''
+        ...
+
+class FieldHomography(Protocol):
+    def find_homography(self, field_tags: list) -> np.ndarray:
+        '''
+        Updates the field homography.
+        '''
+        ...
+
+class RobotTracker(Protocol):
+    def update(self, aruco_tags: list, field_homography: FieldHomography) -> dict[Team, list[RobotState]]:
+        '''
+        Updates the robot state.
+        '''
+        ...
 
 class Broadcaster(Protocol):
-
     def broadcast(self, data: dict):
         '''
         Broadcasts data to each team via wifi.
+        '''
+        ...
+
+class ArucoDetector(Protocol):
+    def detect(self, image) -> list:
+        '''
+        Detects aruco tags.
         '''
         ...
 
@@ -21,17 +82,19 @@ class GameManager:
     Class to manage score, time, and other game information.
     Arbitrates communication between the game controller and the teams.
     '''
-    def __init__(self, match_length_sec: int = 10,
+    def __init__(self, *, match_length_sec: int = 10,
                  broadcaster: Optional[Broadcaster] = None, 
                  puck_tracker: Optional[PuckTracker] = None,
                  robot_tracker: Optional[RobotTracker] = None, 
                  field_homography: Optional[FieldHomography] = None,
-                 aruco_detector: Optional[ArucoDetector] = None):
+                 aruco_detector: Optional[ArucoDetector] = None, 
+                 timer: PausableTimer = None,
+                 camera: cv.VideoCapture = None):
     
         self.match_length_sec = match_length_sec
         self.start_itme = None
         self.score = {Team.RED: 0, Team.BLUE: 0}
-        self.timer = PausableTimer()
+        self.timer = timer
         self.broadcaster: Optional[Broadcaster] = broadcaster
         self.puck_tracker: Optional[PuckTracker] = puck_tracker
         self.field_homography: Optional[FieldHomography] = field_homography
@@ -39,6 +102,7 @@ class GameManager:
         self.aruco_detector: Optional[ArucoDetector] = aruco_detector
         self.aruco_tags = None
         self.puck_state = PuckState(0, 0, False)
+        self.camera = camera
         self.robot_states = {Team.BLUE: [RobotState(0, 0, 0, False), RobotState(0, 0, 0, False)],
                              Team.RED: [RobotState(0, 0, 0, False), RobotState(0, 0, 0, False)]}
         self._state: GameState = GameState.STOPPED
@@ -56,7 +120,15 @@ class GameManager:
                 self.reset()
             case GameState.PAUSED:
                 self.pause()
+
         self._state = state
+
+    @property
+    def score_as_string(self) -> str:  
+        '''
+        Returns the score as a string.
+        '''
+        return f"Red: {self.score[Team.RED]}, Blue: {self.score[Team.BLUE]}"
 
     def start_game(self):
         '''
@@ -86,7 +158,7 @@ class GameManager:
         '''
         Resets the game state.
         '''
-        self.timer = PausableTimer()
+        self.timer.reset()
         self.start_time = None
         self.score = {Team.RED: 0, Team.BLUE: 0}
 
@@ -104,12 +176,12 @@ class GameManager:
         if self.puck_tracker:
             self.puck_state = self.puck_tracker.update()
 
-    def update_aruco_tags(self):
+    def update_aruco_tags(self, frame):
         '''
         Updates the aruco tags.
         '''
         if self.aruco_detector:
-            self.aruco_tags = self.aruco_detector.detect()
+            self.aruco_tags = self.aruco_detector.detect(frame)
     
     def update_robot(self):
         '''
@@ -122,11 +194,12 @@ class GameManager:
         '''
         Updates the game state.
         '''
+        _, frame = self.camera.read()
         if self.state == GameState.RUNNING:
-            self.update_aruco_tags()
-            self.update_homography()
-            self.update_puck()
-            self.update_robot()
+            # self.update_aruco_tags(frame)
+            # self.update_homography()
+            # self.update_puck()
+            # self.update_robot()
             seconds_remaining = self.seconds_remaining
             if seconds_remaining <= 0:
                 self.state = GameState.STOPPED
@@ -139,4 +212,4 @@ class GameManager:
                     Team.RED: self.robot_states[Team.RED],
                     Team.BLUE: self.robot_states[Team.BLUE]
                 })
-    
+                

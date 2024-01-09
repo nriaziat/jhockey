@@ -1,6 +1,5 @@
 from enum import Enum, auto
 from dataclasses import dataclass
-import numpy as np
 
 @dataclass
 class FieldTag:

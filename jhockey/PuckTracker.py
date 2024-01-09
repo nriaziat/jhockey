@@ -1,7 +1,24 @@
 import cv2 as cv
 import numpy as np
 from .utils import PuckState
-from .FieldHomography import FieldHomography
+from typing import Protocol
+
+class FieldHomography(Protocol):
+    def convert_px2world(self, x: int, y: int) -> np.ndarray:
+        '''
+        Convert the coordinates from the camera frame to the field frame.
+        @param x: x coordinate in the camera frame
+        @param y: y coordinate in the camera frame
+        '''
+        ...            
+
+    @property
+    def H(self) -> np.ndarray:
+        '''
+        Returns the homography matrix.
+        '''
+        ...
+
 
 class PuckTracker:
     '''
@@ -46,7 +63,7 @@ class PuckTracker:
         '''
         if self.field_homography.H is not None:
             center = self.bbox[0] + self.bbox[2] // 2, self.bbox[1] + self.bbox[3] // 2
-            coor = self.field_homography.convert_coordinates(center[0], center[1])
+            coor = self.field_homography.convert_px2world(center[0], center[1])
         if self.tracker_initialized:
             return PuckState(coor[0], coor[1], True)
         else:
