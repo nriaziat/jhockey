@@ -56,4 +56,4 @@ COPY . .
 EXPOSE 8080
 
 # Run the application.
-CMD [ "python", "main.py"]
+ENTRYPOINT [ "python", "main.py"]
