@@ -34,8 +34,7 @@ RUN apt-get update -y
 RUN apt install libgl1-mesa-glx -y
 RUN apt-get install 'ffmpeg'\
     'libsm6'\
-    'libxext6'  \
-    'v4l-utils' -y
+    'libxext6' -y
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
@@ -45,10 +44,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=requirements.txt \
     python -m pip install -r requirements.txt
 
+RUN usermod -a -G video appuser
+
 # Switch to the non-privileged user to run the application.
 USER appuser
-
-RUN sudo usermod -a -G video appuser
 
 # Copy the source code into the container.
 COPY . .
