@@ -28,6 +28,8 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
+RUN adduser appuser video
+
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update -y
 RUN apt install libgl1-mesa-glx -y
@@ -53,4 +55,4 @@ COPY . .
 EXPOSE 8080
 
 # Run the application.
-CMD python3 main.py
+ENTRYPOINT [ "python", "main.py"]
