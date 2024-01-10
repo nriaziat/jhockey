@@ -1,11 +1,14 @@
 # Project Name
 
-A brief description of your project.
+JHockey Game Manager
 
 ## Prerequisites
 
-- Python (version X.X.X)
-- Any other dependencies or libraries required by your project
+- Python (version 3.11.5)
+- fastapi
+- nicegui
+- numpy
+- opencv_contrib_python
 
 ## Installation
 
@@ -20,7 +23,7 @@ A brief description of your project.
 
 ## Usage
 
-Explain how to use your project and provide examples if necessary.
+Run main.py. A GUI will be hosted at localhost:8080.
 
 ## License
 

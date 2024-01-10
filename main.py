@@ -1,66 +1,53 @@
+from jhockey.ArucoDetector import ArucoDetector
+from jhockey.ThreadedCamera import ThreadedCamera
+from jhockey.RobotTracker import RobotTracker
+from jhockey.PuckTracker import PuckTracker
+from jhockey.FieldHomography import FieldHomography
+from jhockey.Broadcaster import Broadcaster
+from jhockey.GameGUI import GameGUI, handle_sigint
 from jhockey.GameManager import GameManager
 from jhockey.PausableTimer import PausableTimer
-from jhockey.ArucoDetector import ArucoDetector
-
-from utils import load_coefficients
-
-from jhockey.GameGUI import GameGUI
-
-import signal
-from fastapi import Response
-from nicegui import Client, app, run, ui
-import base64
 import cv2 as cv
+from nicegui import app, run
+from fastapi import Response
+import base64
 import numpy as np
-import time
 
-# black_1px = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII='
-# placeholder = Response(content=base64.b64decode(black_1px.encode('ascii')), media_type='image/png')
+black_1px = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII="
+placeholder = Response(
+    content=base64.b64decode(black_1px.encode("ascii")), media_type="image/png"
+)
 
-# def convert(frame: np.ndarray) -> bytes:
-#     _, imencode_image = cv.imencode('.jpg', frame)
-#     return imencode_image.tobytes()
-# async def disconnect() -> None:
-#     """Disconnect all clients from current running server."""
-#     for client_id in Client.instances:
-#         await app.sio.disconnect(client_id)
-
-# async def cleanup() -> None:
-#     # This prevents ugly stack traces when auto-reloading on code change,
-#     # because otherwise disconnected clients try to reconnect to the newly started server.
-#     await disconnect()
-#     # Release the webcam hardware so it can be used by other applications again.
-#     camera.release()
-
-# def handle_sigint(signum, frame) -> None:
-#     # `disconnect` is async, so it must be called from the event loop; we use `ui.timer` to do so.
-#     ui.timer(0.1, disconnect, once=True)
-#     # Delay the default handler to allow the disconnect to complete.
-#     ui.timer(1, lambda: signal.default_int_handler(signum, frame), once=True)
-
-# @app.get('/video/frame')
-# async def update_video_feed() -> Response:
-#     if not camera.isOpened():
-#         return placeholder
-#     # The `video_capture.read` call is a blocking function.
-#     # So we run it in a separate thread (default executor) to avoid blocking the event loop.
-#     _, frame = await run.io_bound(camera.read)
-#     if frame is None:
-#         return placeholder
-#     # `convert` is a CPU-intensive function, so we run it in a separate process to avoid blocking the event loop and GIL.
-#     jpeg = await run.cpu_bound(convert, frame)
-#     return Response(content=jpeg, media_type='image/jpeg')
-
-# app.on_shutdown(cleanup)
-# signal.signal(signal.SIGINT, handle_sigint) 
-
-# mtx, dst = load_coefficients('calibration_charuco.yml')
-ad = ArucoDetector()
-camera = cv.VideoCapture(0)
+cam = ThreadedCamera().start()
+aruco = ArucoDetector().start(cam)
+field_homography = FieldHomography()
+rob_track = RobotTracker(field_homography).start(aruco)
+puck_track = PuckTracker(field_homography).start(cam)
+broadcaster = Broadcaster(puck_track, rob_track).start()
 timer = PausableTimer()
-gui = GameGUI()
-gm = GameManager(timer=timer,
-                 aruco_detector=ad, 
-                 gui=gui, 
-                 camera=camera)
-gm.periodic_update()
+gui = GameGUI(video_feed=False)
+gm = GameManager(
+    broadcaster=broadcaster,
+    puck_tracker=puck_track,
+    robot_tracker=rob_track,
+    field_homography=field_homography,
+    aruco_detector=aruco,
+    gui=gui,
+    timer=timer,
+).start()
+
+
+@app.get("/video/frame")
+async def update_video_feed() -> Response:
+    # So we run it in a separate thread (default executor) to avoid blocking the event loop.
+    frame = await run.io_bound(cam.read)
+    if frame is None:
+        return placeholder
+    # `convert` is a CPU-intensive function, so we run it in a separate process to avoid blocking the event loop and GIL.
+    jpeg = await run.cpu_bound(convert, frame)
+    return Response(content=jpeg, media_type="image/jpeg")
+
+
+def convert(frame: np.ndarray) -> bytes:
+    _, imencode_image = cv.imencode(".jpg", frame)
+    return imencode_image.tobytes()
