@@ -4,7 +4,7 @@ from jhockey.RobotTracker import RobotTracker
 from jhockey.PuckTracker import PuckTracker
 from jhockey.FieldHomography import FieldHomography
 from jhockey.Broadcaster import Broadcaster
-from jhockey.GameGUI import GameGUI, handle_sigint
+from jhockey.GameGUI import GameGUI
 from jhockey.GameManager import GameManager
 from jhockey.PausableTimer import PausableTimer
 import cv2 as cv
@@ -12,13 +12,18 @@ from nicegui import app, run
 from fastapi import Response
 import base64
 import numpy as np
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--camera", type=int, default=0)
+args = parser.parse_args()
 
 black_1px = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII="
 placeholder = Response(
     content=base64.b64decode(black_1px.encode("ascii")), media_type="image/png"
 )
 
-cam = ThreadedCamera().start()
+cam = ThreadedCamera(args.camera).start()
 aruco = ArucoDetector().start(cam)
 field_homography = FieldHomography()
 rob_track = RobotTracker(field_homography).start(aruco)
