@@ -16,6 +16,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--camera", type=int, default=0)
+parser.add_argument("--match-length", type=int, default=10)
 args = parser.parse_args()
 
 black_1px = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII="
@@ -32,6 +33,7 @@ broadcaster = Broadcaster(puck_track, rob_track).start()
 timer = PausableTimer()
 gui = GameGUI(video_feed=False)
 gm = GameManager(
+    match_length_sec=args.match_length,
     broadcaster=broadcaster,
     puck_tracker=puck_track,
     robot_tracker=rob_track,
