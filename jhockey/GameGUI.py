@@ -100,7 +100,7 @@ class GameGUI:
             )
         app.on_shutdown(self.cleanup)
         signal.signal(signal.SIGINT, handle_sigint)
-        ui.run(title="JHockey")
+        ui.run(title="JHockey", reload=False)
 
     def toggle_debug(self):
         self.debug = not self.debug

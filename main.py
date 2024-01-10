@@ -15,37 +15,38 @@ import numpy as np
 import argparse
 import glob
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--camera", type=int, default=0)
-parser.add_argument("--match-length", type=int, default=10)
-parser.add_argument("--video-feed", action="store_true")
-args = parser.parse_args()
+if __name__ in {"__main__", "__mp_main__"}:
 
-black_1px = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII="
-placeholder = Response(
-    content=base64.b64decode(black_1px.encode("ascii")), media_type="image/png"
-)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--camera", type=int, default=0)
+    parser.add_argument("--match-length", type=int, default=10)
+    parser.add_argument("--video-feed", action="store_true")
+    args = parser.parse_args()
 
-print(glob.glob("/dev/video*"))
+    black_1px = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII="
+    placeholder = Response(
+        content=base64.b64decode(black_1px.encode("ascii")), media_type="image/png"
+    )
 
-cam = ThreadedCamera(args.camera).start()
-aruco = ArucoDetector().start(cam)
-field_homography = FieldHomography()
-rob_track = RobotTracker(field_homography).start(aruco)
-puck_track = PuckTracker(field_homography).start(cam)
-broadcaster = Broadcaster(puck_track, rob_track).start()
-timer = PausableTimer()
-gui = GameGUI(video_feed=args.video_feed)
-gm = GameManager(
-    match_length_sec=args.match_length,
-    broadcaster=broadcaster,
-    puck_tracker=puck_track,
-    robot_tracker=rob_track,
-    field_homography=field_homography,
-    aruco_detector=aruco,
-    gui=gui,
-    timer=timer,
-).start()
+    print(glob.glob("/dev/video?"))
+    gui = GameGUI(video_feed=args.video_feed)
+    cam = ThreadedCamera(args.camera).start()
+    aruco = ArucoDetector().start(cam)
+    field_homography = FieldHomography()
+    rob_track = RobotTracker(field_homography).start(aruco)
+    puck_track = PuckTracker(field_homography).start(cam)
+    broadcaster = Broadcaster(puck_track, rob_track).start()
+    timer = PausableTimer()
+    gm = GameManager(
+        match_length_sec=args.match_length,
+        broadcaster=broadcaster,
+        puck_tracker=puck_track,
+        robot_tracker=rob_track,
+        field_homography=field_homography,
+        aruco_detector=aruco,
+        gui=gui,
+        timer=timer,
+    ).start()
 
 
 @app.get("/video/frame")
