@@ -86,7 +86,7 @@ class GameManager:
         gui: Optional[GUI] = None,
         timer: PausableTimer = None,
     ):
-        """
+        '''
         Parameters
         ----------
         match_length_sec : int, optional
@@ -105,7 +105,7 @@ class GameManager:
             The GUI object, by default None
         timer : PausableTimer
             The timer object.
-        """
+        '''
         self.match_length_sec = match_length_sec
         self.start_time = None
         self.score = {Team.RED: 0, Team.BLUE: 0}

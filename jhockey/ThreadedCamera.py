@@ -7,7 +7,7 @@ class ThreadedCamera:
     '''
     Threaded wrapper for OpenCV VideoCapture with built-in camera dewarping.
     '''
-    def __init__(self, src: int = -1, name="ThreadedCamera", mtx=None, dist=None):
+    def __init__(self, src: int = 0, name="ThreadedCamera", mtx=None, dist=None):
         """
         Initialize the ThreadedCamera object.
 

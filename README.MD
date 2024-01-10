@@ -17,6 +17,8 @@ JHockey Game Manager
 3. Install the required dependencies by running the following command:
 
     ```shell
+    conda create -n jhockey
+    conda activate jhockey
     pip install -r requirements.txt
     pip install .
     ```
@@ -29,7 +31,7 @@ Or, using Docker
 
 ## Usage
 
-Run main.py. A GUI will be hosted at localhost:8080.
+Run main.py. A GUI will be hosted at localhost:8080. Optionally, pass an int value to the command with "--camera" to choose a specific camera index. 
 
 ## License
 
