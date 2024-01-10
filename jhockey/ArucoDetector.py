@@ -4,7 +4,6 @@ from typing import Protocol
 import numpy as np
 from .utils import AruCoTag
 
-
 class Camera(Protocol):
     def read(self) -> np.ndarray:
         """
@@ -23,7 +22,6 @@ class ArucoDetector:
         self.name = name
         self.corners = None
         self.ids = None
-        self.rejected = None
         self.stopped = False
         self.aruco_lock = Lock()
 
@@ -37,12 +35,12 @@ class ArucoDetector:
         if self.corners is None or self.ids is None:
             return []
         tag_list = []
-        for tag in zip(self.corners, self.ids):
-            tag_list.append(AruCoTag(id=tag[1], corners=tag[0]))
+        for corner, id in zip(self.corners, self.ids):
+            tag_list.append(AruCoTag(id=id[0], corners=corner))
         return tag_list
 
     def detect(self, frame):
-        (self.corners, self.ids, self.rejected) = self.detector.detectMarkers(frame)
+        self.corners, self.ids, _ = self.detector.detectMarkers(frame)
 
     def run(self, cam: Camera):
         while True:

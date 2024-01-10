@@ -50,9 +50,10 @@ class RobotTracker:
         config = json.load(open(aruco_config, "r"))
         self.team_tags = {}
         for id in config["ids"]:
-            robot_num = id.split("_")[1]
+            tag_id = int(config["ids"][id])
+            robot_num = int(id.split("_")[1])
             team = Team.BLUE if "blue" in id else Team.RED
-            self.team_tags[id] = team, robot_num
+            self.team_tags[tag_id] = team, robot_num
         self.field_homography = field_homography
         self.stopped = False
         self.robot_lock = Lock()
@@ -65,7 +66,10 @@ class RobotTracker:
 
     def update(self, aruco_tags: list[AruCoTag]):
         for tag in aruco_tags:
-            team = self.team_tags[tag.id][0]
+            try:
+                team = self.team_tags[tag.id][0]
+            except KeyError:
+                continue  # not a robot tag, probably a field tag
             if self.field_homography.H is None:
                 continue
             coor = self.field_homography.convert_px2world(tag.corners[0][0], tag.corners[0][1])

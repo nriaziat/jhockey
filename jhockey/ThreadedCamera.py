@@ -17,7 +17,7 @@ class ThreadedCamera:
             mtx (numpy.ndarray, optional): The camera matrix. Defaults to None.
             dist (numpy.ndarray, optional): The distortion coefficients. Defaults to None.
         """
-        self.stream = cv.VideoCapture(src, cv.CAP_V4L)
+        self.stream = cv.VideoCapture(src)
         (self.grabbed, self.frame) = self.stream.read()
 
         self.name = name
@@ -49,6 +49,8 @@ class ThreadedCamera:
                 self.frame = cv.undistort(
                     frame, self.mtx, self.dist, None, self.mtx
                 )
+            else:
+                self.frame = frame
 
     def read(self):
         return self.frame

@@ -42,7 +42,7 @@ class GameGUI:
                     "absolute-bottom text-subtitle2 text-center"
                 )
             self.video_timer = ui.timer(
-                interval=0.05,
+                interval=0.1,
                 callback=lambda: self.video_feed.set_source(
                     f"/video/frame?{time.time()}"
                 ),

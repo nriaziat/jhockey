@@ -22,8 +22,13 @@ class FieldHomography:
         self.H = None
 
     def find_homography(self, field_tags: list[AruCoTag]) -> np.ndarray:
-        _, self.H = cv.findHomography(
-            np.array([(elem.corners[0][0], elem.corners[0][1]) for elem in field_tags]),
+        try:
+            detected_tags = np.array([(elem.corners[0][0], elem.corners[0][1]) for elem in field_tags])
+        except KeyError:
+            return None
+        if len(detected_tags) < 4:
+            return None
+        _, self.H = cv.findHomography(detected_tags,
             np.array(
                 [
                     (self.field_corners[elem.id][0], self.field_corners[elem.id][1])
