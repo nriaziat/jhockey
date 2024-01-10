@@ -1,4 +1,4 @@
-from .utils import Team, RobotState
+from .utils import Team, RobotState, AruCoTag
 import json
 from typing import Any, Protocol
 import numpy as np
@@ -63,12 +63,12 @@ class RobotTracker:
         t.start()
         return self
 
-    def update(self, corners, ids):
-        for corner, id in zip(corners, ids):
-            team = self.team_tags[id][0]
+    def update(self, aruco_tags: list[AruCoTag]):
+        for tag in aruco_tags:
+            team = self.team_tags[tag.id][0]
             if self.field_homography.H is None:
                 continue
-            coor = self.field_homography.convert_px2world(corner[0][0], corner[0][1])
+            coor = self.field_homography.convert_px2world(tag.corners[0][0], tag.corners[0][1])
             theta = np.arctan2(coor[1], coor[0])
             robot_num = self.team_tags[id][1]
             with self.robot_lock:
@@ -89,9 +89,9 @@ class RobotTracker:
                     robot.y = np.random.randint(0, 1000)
                     robot.theta = np.random.randint(0, 360)
 
-            corners, ids, rejected = aruco.get()
-            if corners is not None and ids is not None:
-                self.update(corners, ids)
+            aruco_tags = aruco.get()
+            if len(aruco_tags) > 0:
+                self.update(aruco_tags)
 
     def get(self) -> tuple[list[np.ndarray], list[int], list[np.ndarray]]:
         return self.robot_states

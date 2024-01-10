@@ -2,6 +2,7 @@ import cv2
 from threading import Thread, Lock
 from typing import Protocol
 import numpy as np
+from .utils import AruCoTag
 
 
 class Camera(Protocol):
@@ -32,13 +33,16 @@ class ArucoDetector:
         t.start()
         return self
 
-    def get(self):
-        with self.aruco_lock:
-            return self.corners, self.ids, self.rejected
+    def get(self) -> list[AruCoTag]:
+        if self.corners is None or self.ids is None:
+            return []
+        tag_list = []
+        for tag in zip(self.corners, self.ids):
+            tag_list.append(AruCoTag(id=tag[1], corners=tag[0]))
+        return tag_list
 
     def detect(self, frame):
-        with self.aruco_lock:
-            (self.corners, self.ids, self.rejected) = self.detector.detectMarkers(frame)
+        (self.corners, self.ids, self.rejected) = self.detector.detectMarkers(frame)
 
     def run(self, cam: Camera):
         while True:

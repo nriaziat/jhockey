@@ -1,12 +1,12 @@
 from enum import Enum, auto
 from dataclasses import dataclass
+import numpy as np
 
 
 @dataclass
-class FieldTag:
+class AruCoTag:
     id: int
-    x: int
-    y: int
+    corners: list[np.ndarray]
 
 
 class Team(Enum):

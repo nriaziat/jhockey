@@ -1,8 +1,9 @@
 from typing_extensions import Protocol
-from .utils import Team, GUIData, GameState, PuckState, RobotState
+from .utils import Team, GUIData, GameState, PuckState, RobotState, AruCoTag
 from typing import Optional
 import numpy as np
 import threading
+from typing import Any
 
 class PausableTimer(Protocol):
     def start(self):
@@ -44,12 +45,12 @@ class PausableTimer(Protocol):
 
 
 class ThreadedNode(Protocol):
-    def get(self):
+    def get(self) -> Any:
         ...
 
 
 class FieldHomography(Protocol):
-    def find_homography(self, field_tags: list) -> np.ndarray:
+    def find_homography(self, field_tags: list[AruCoTag]) -> np.ndarray:
         """
         Updates the field homography.
         """
@@ -57,10 +58,10 @@ class FieldHomography(Protocol):
 
 
 class GUI(Protocol):
-    def create_ui(self, match_length_sec: int):
+    def create_ui(self, match_length_sec: int) -> None:
         ...
 
-    def update(self, data: dict):
+    def update(self, data: dict) -> None:
         """
         Updates the GUI.
         """
@@ -196,7 +197,8 @@ class GameManager:
         while True:
             if self.state == GameState.RUNNING:
                 aruco_tags = self.aruco_detector.get()
-                self.field_homography.find_homography(aruco_tags)
+                if len(aruco_tags) > 0:
+                    self.field_homography.find_homography(aruco_tags)
                 self.puck_state = self.puck_tracker.get()
                 self.robot_states = self.robot_tracker.get()
 
