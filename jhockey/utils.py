@@ -47,7 +47,7 @@ class GUIData:
     score: dict
     score_as_string: str
     robot_states: dict[Team : list[RobotState]]
-
+    aruco_tags: list[AruCoTag]
 
 @dataclass(kw_only=True)
 class BroadcasterMessage:

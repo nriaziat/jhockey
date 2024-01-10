@@ -52,15 +52,28 @@ class GameGUI:
 
         self.debug: bool = False
         with ui.column().bind_visibility_from(self, "debug"):
-            columns = [
+            robot_columns = [
                 {"name": "robot", "label": "Name", "field": "robot", "required": True, "align": "left", "sortable": True},
                 {"name": "x", "label": "x [mm]", "field": "x"},
                 {"name": "y", "label": "y [mm]", "field": "y"},
                 {"name": "theta","label": "theta [deg]", "field": "theta"},
                 {"name": "found", "label": "Found", "field": "found"}
             ]
-            self.debug_table = ui.table(columns=columns, rows=[], row_key="robot")
+            self.robot_debug_tab = ui.table(columns=robot_columns, rows=[], row_key="robot")
             self.update_rate = ui.label("")
+
+            tag_columns = [
+                {"name": "id", "label": "ID", "field": "id", "required": True, "align": "left", "sortable": True},
+                {"name": "x1", "label": "x1 [px]", "field": "x1"},
+                {"name": "y1", "label": "y1 [px]", "field": "y1"},
+                {"name": "x2", "label": "x2 [px]", "field": "x2"},
+                {"name": "y2", "label": "y2 [px]", "field": "y2"},
+                {"name": "x3", "label": "x3 [px]", "field": "x3"},
+                {"name": "y3", "label": "y3 [px]", "field": "y3"},
+                {"name": "x4", "label": "x4 [px]", "field": "x4"},
+                {"name": "y4", "label": "y4 [px]", "field": "y4"},
+            ]
+            self.tag_debug_tab = ui.table(columns=tag_columns, rows=[], row_key="id")
 
         with ui.row():
             self.start_pause_button: ui.button = ui.button(
@@ -107,8 +120,9 @@ class GameGUI:
         self.score_display.text = data.score_as_string
         self.seconds_remaining = data.seconds_remaining
         robot_states = data.robot_states
+        aruco_tags = data.aruco_tags
         if robot_states is not None and self.debug:
-            rows = [
+            robot_rows = [
                 {
                     "robot": "Red 1",
                     "x": robot_states[Team.RED][0].x,
@@ -138,7 +152,26 @@ class GameGUI:
                     "found": "✅" if robot_states[Team.BLUE][1].found else "❌"
                 },
             ]
-            self.debug_table.rows = rows
+            self.robot_debug_tab.rows = robot_rows
+
+        if len(aruco_tags) > 0 and self.debug:
+            tag_rows = []
+            for tag in aruco_tags:
+                tag_rows.append(
+                    {
+                        "id": tag.id,
+                        "x1": tag.corners[0][0][0],
+                        "y1": tag.corners[0][0][1],
+                        "x2": tag.corners[0][1][0],
+                        "y2": tag.corners[0][1][1],
+                        "x3": tag.corners[0][2][0],
+                        "y3": tag.corners[0][2][1],
+                        "x4": tag.corners[0][3][0],
+                        "y4": tag.corners[0][3][1],
+                    }
+                )
+            self.tag_debug_tab.rows = tag_rows
+
         self.update_start_button(self.state)
         update_rate = 1 / (time.time() - self.last_update_time)
         self.last_update_time = time.time()

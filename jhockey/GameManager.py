@@ -226,6 +226,7 @@ class GameManager:
                     score=self.score,
                     score_as_string=self.score_as_string,
                     robot_states=self.robot_states,
+                    aruco_tags=aruco_tags,
                 )
                 with self.lock:
                     self.gui.update(send_data)
