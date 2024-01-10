@@ -21,6 +21,12 @@ JHockey Game Manager
     pip install .
     ```
 
+Or, using Docker
+
+    ```shell
+    docker compose up --build
+    ```
+
 ## Usage
 
 Run main.py. A GUI will be hosted at localhost:8080.
