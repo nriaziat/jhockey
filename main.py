@@ -8,7 +8,7 @@ from jhockey.GameGUI import GameGUI
 from jhockey.GameManager import GameManager
 from jhockey.PausableTimer import PausableTimer
 import cv2 as cv
-from nicegui import app, run
+from nicegui import app, run, ui
 from fastapi import Response
 import base64
 import numpy as np
@@ -21,6 +21,7 @@ if __name__ in {"__main__", "__mp_main__"}:
     parser.add_argument("--camera", type=int, default=0)
     parser.add_argument("--match-length", type=int, default=10)
     parser.add_argument("--video-feed", action="store_true")
+    parser.add_argument("--host", type=str, default="127.0.0.1")
     args = parser.parse_args()
 
     black_1px = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII="
@@ -47,6 +48,8 @@ if __name__ in {"__main__", "__mp_main__"}:
         gui=gui,
         timer=timer,
     ).start()
+    ui.run(title="JHockey", reload=False, host=args.host)
+
 
 
 @app.get("/video/frame")
