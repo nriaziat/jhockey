@@ -195,6 +195,7 @@ class GameManager:
         Updates the game state.
         """
         while True:
+            aruco_tags = []
             if self.state == GameState.RUNNING:
                 aruco_tags = self.aruco_detector.get()
                 if len(aruco_tags) > 0:
