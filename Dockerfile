@@ -28,7 +28,6 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-RUN adduser appuser video
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update -y
@@ -48,6 +47,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # Switch to the non-privileged user to run the application.
 USER appuser
+
+RUN sudo usermod -a -G video appuser
 
 # Copy the source code into the container.
 COPY . .
