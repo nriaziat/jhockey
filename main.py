@@ -13,7 +13,7 @@ from fastapi import Response
 import base64
 import numpy as np
 import argparse
-
+import glob
 
 @app.get("/video/frame")
 async def update_video_feed() -> Response:
@@ -41,6 +41,8 @@ black_1px = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1
 placeholder = Response(
     content=base64.b64decode(black_1px.encode("ascii")), media_type="image/png"
 )
+
+print(glob.glob("/dev/video*"))
 
 cam = ThreadedCamera(args.camera).start()
 aruco = ArucoDetector().start(cam)
