@@ -15,22 +15,6 @@ import numpy as np
 import argparse
 import glob
 
-@app.get("/video/frame")
-async def update_video_feed() -> Response:
-    # So we run it in a separate thread (default executor) to avoid blocking the event loop.
-    frame = await run.io_bound(cam.read)
-    if frame is None:
-        return placeholder
-    # `convert` is a CPU-intensive function, so we run it in a separate process to avoid blocking the event loop and GIL.
-    jpeg = await run.cpu_bound(convert, frame)
-    return Response(content=jpeg, media_type="image/jpeg")
-
-
-def convert(frame: np.ndarray) -> bytes:
-    _, imencode_image = cv.imencode(".jpg", frame)
-    return imencode_image.tobytes()
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--camera", type=int, default=0)
 parser.add_argument("--match-length", type=int, default=10)
@@ -62,3 +46,19 @@ gm = GameManager(
     gui=gui,
     timer=timer,
 ).start()
+
+
+@app.get("/video/frame")
+async def update_video_feed() -> Response:
+    # So we run it in a separate thread (default executor) to avoid blocking the event loop.
+    frame = await run.io_bound(cam.read)
+    if frame is None:
+        return placeholder
+    # `convert` is a CPU-intensive function, so we run it in a separate process to avoid blocking the event loop and GIL.
+    jpeg = await run.cpu_bound(convert, frame)
+    return Response(content=jpeg, media_type="image/jpeg")
+
+
+def convert(frame: np.ndarray) -> bytes:
+    _, imencode_image = cv.imencode(".jpg", frame)
+    return imencode_image.tobytes()
