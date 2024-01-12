@@ -14,7 +14,14 @@ class Camera(Protocol):
 
 class ArucoDetector:
     def __init__(self, name="ArUco Detector"):
-        self.arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_100)
+        '''
+        Class to detect ArUco markers.
+        Parameters
+        ----------
+        name : str, optional
+            The name of the thread, by default "ArUco Detector"
+        '''
+        self.arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
         self.arucoParams = cv2.aruco.DetectorParameters()
         self.detector: cv2.aruco.ArucoDetector = cv2.aruco.ArucoDetector(
             self.arucoDict, self.arucoParams
@@ -26,6 +33,15 @@ class ArucoDetector:
         self.aruco_lock = Lock()
 
     def start(self, cam):
+        """
+        Starts the thread that runs the Aruco detector.
+
+        Args:
+            cam (Camera): The camera object that provides the frames.
+
+        Returns:
+            ArucoDetector: The ArucoDetector object.
+        """
         t = Thread(target=self.run, name=self.name, args=(cam,))
         t.daemon = True
         t.start()

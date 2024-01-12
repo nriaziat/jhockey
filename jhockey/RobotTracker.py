@@ -41,7 +41,18 @@ class RobotTracker:
         field_homography : FieldHomography
             The field homography object.
         aruco_config : str, optional
-            The path to the ArUco configuration file, by default "aruco_config.json"
+            The path to the ArUco configuration file, by default "aruco_config.json". 
+            The configuration file should contain the ids of the ArUco markers on the robots and which team they belong to.
+            For example:
+            {
+            ...
+                "ids": {
+                    "blue_1": 5,
+                    "blue_2": 6,
+                    "red_1": 7,
+                    "red_2": 8
+                }
+            }
         '''
         self.robot_states = {
             Team.BLUE: [RobotState(0, 0, 0, False), RobotState(0, 0, 0, False)],
@@ -59,6 +70,13 @@ class RobotTracker:
         self.robot_lock = Lock()
 
     def start(self, aruco: ArucoDetector):
+        '''
+        Start the a new thread to track robots using ArUco Detector.
+        Parameters
+        ----------
+        aruco : ArucoDetector
+            The ArUco detector object.
+        '''
         t = Thread(target=self.run, name="Robot Tracker", args=(aruco,))
         t.daemon = True
         t.start()

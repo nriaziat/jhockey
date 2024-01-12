@@ -1,24 +1,22 @@
 from jhockey import * 
 from nicegui import ui
 import argparse
-import serial
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--camera", type=int, default=0)
-parser.add_argument("--match-length", type=int, default=10)
-parser.add_argument("--video-feed", action="store_true")
-parser.add_argument("--jevois", action="store_true")
+parser.add_argument("--camera", type=int, default=None)
+parser.add_argument("--match-length", type=int, default=180)
 parser.add_argument("--puck_tracking", action="store_true")
+parser.add_argument("--config", type=str, default="config.json")
 args = parser.parse_args()
 
 gui = GameGUI(video_feed=args.video_feed)
-if args.jevois:
+if args.camera is None:
     aruco = JeVoisArucoDetector().start()
 else:
     cam = ThreadedCamera(src=args.camera).start()
     aruco = ArucoDetector().start(cam)
 field_homography = FieldHomography()
-rob_track = RobotTracker(field_homography).start(aruco)
+rob_track = RobotTracker(field_homography, aruco_config=args.config).start(aruco)
 if args.puck_tracking:
     puck_track = PuckTracker(field_homography).start(aruco)
 else:

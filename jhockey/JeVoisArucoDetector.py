@@ -6,6 +6,16 @@ from serial.serialutil import SerialException
 
 class JeVoisArucoDetector:
     def __init__(self, name="ArUco Detector", port="/dev/ttyACM0", baudrate=115200):
+        '''
+        Parameters
+        ----------
+        name : str, optional
+            The name of the thread, by default "ArUco Detector"
+        port : str, optional
+            The serial port to connect to, by default "/dev/ttyACM0".
+        baudrate : int, optional
+            The baudrate of the serial connection, by default 115200
+        '''
         self.port = port
         self.baudrate = baudrate
         self.name = name
@@ -13,6 +23,9 @@ class JeVoisArucoDetector:
         self.stopped = False
 
     def start(self):
+        '''
+        Start the a new thread to read and parse ArUco data from the JeVois camera.
+        '''
         t = Thread(target=self.run, name=self.name)
         t.daemon = True
         t.start()
@@ -36,7 +49,8 @@ class JeVoisArucoDetector:
         if len(tok) != 6:
             return
         _, id, x, y, w, h = tok
-        self.corners[int(id[1:])] = np.array([int(x), int(y), int(x + w), int(y + h)])
+        # coordinates are returned in "standard" coordinates, where center is at (0, 0), right edge is at 1000 and bottom edge is at 750
+        self.corners[int(id[1:])] = np.array([x, y, x + w, y + h])
 
 
     def run(self):

@@ -14,6 +14,32 @@ class FieldHomography:
         ----------
         param_file : str, optional
             The path to the field parameters file, by default "field_params.json"
+            The field parameters file should contain the coordinates of the ArUco markers on the field.
+            For example:
+            {
+            "field_markers": [
+                {
+                    "id": 0,
+                    "x": 10,
+                    "y": 20
+                },
+                {
+                    "id": 1,
+                    "x": 30,
+                    "y": 40
+                },
+                {
+                    "id": 2,
+                    "x": 50,
+                    "y": 60
+                },
+                {
+                    "id": 3,
+                    "x": 70,
+                    "y": 80
+                }
+            ],
+            } ...
         '''
         self.field_params = json.load(open(param_file, "r"))
         self.field_corners = {
@@ -39,7 +65,7 @@ class FieldHomography:
         self.H_inv = np.linalg.inv(self.H)
         return self.H
 
-    def convert_px2world(self, x: int, y: int) -> np.ndarray:
+    def convert_cam2world(self, x: int, y: int) -> np.ndarray:
         """
         @param x: x coordinate in pixels
         @param y: y coordinate in pixels
@@ -49,7 +75,7 @@ class FieldHomography:
             raise Exception("Homography not initialized")
         return cv.perspectiveTransform(np.array([x, y]), self.H)
 
-    def convert_world2px(self, x: float, y: float) -> np.ndarray:
+    def convert_world2cam(self, x: float, y: float) -> np.ndarray:
         """
         @param x: x coordinate in world coordinates
         @param y: y coordinate in world coordinates
