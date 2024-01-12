@@ -2,6 +2,7 @@ from threading import Thread
 from .utils import AruCoTag
 import serial
 import numpy as np
+from serial.serialutil import SerialException
 
 class JeVoisArucoDetector:
     def __init__(self, name="ArUco Detector", port="/dev/ttyACM0", baudrate=115200):
@@ -11,8 +12,8 @@ class JeVoisArucoDetector:
         self.corners = [None] * 8
         self.stopped = False
 
-    def start(self, cam):
-        t = Thread(target=self.run, name=self.name, args=(cam,))
+    def start(self):
+        t = Thread(target=self.run, name=self.name)
         t.daemon = True
         t.start()
         return self

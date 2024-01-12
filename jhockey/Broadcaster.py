@@ -25,7 +25,7 @@ class Broadcaster:
     Class to broadcast location information to each team via wifi.
     """
 
-    def __init__(self, puck_tracker: PuckTracker, robot_tracker: RobotTracker):
+    def __init__(self, *, puck_tracker: PuckTracker = None, robot_tracker: RobotTracker = None):
         self.stopped = False
         self.puck_tracker = puck_tracker
         self.robot_tracker = robot_tracker
@@ -47,9 +47,10 @@ class Broadcaster:
         while True:
             if self.stopped:
                 return
+            puck_msg = self.puck_tracker.get() if self.puck_tracker else PuckState(0, 0, False)
             self.message = BroadcasterMessage(
                 time=time.time(),
-                puck=self.puck_tracker.get(),
+                puck=puck_msg,
                 robots=self.robot_tracker.get(),
             )
             self.broadcast(self.message)
