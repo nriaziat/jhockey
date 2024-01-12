@@ -1,6 +1,4 @@
-# Project Name
-
-JHockey Game Manager
+# JHockey
 
 ## Prerequisites
 
