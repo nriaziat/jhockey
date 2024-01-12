@@ -26,7 +26,8 @@ JHockey Game Manager
 Or, using Docker
 
     ```shell
-    docker compose up --build
+    docker build . --tag jhockey:latest
+    docker run -it --rm --device /dev/video0 jhockey 
     ```
 
 ## Usage

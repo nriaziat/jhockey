@@ -2,6 +2,7 @@ from jhockey.ArucoDetector import ArucoDetector
 from jhockey.ThreadedCamera import ThreadedCamera
 from jhockey.RobotTracker import RobotTracker
 from jhockey.PuckTracker import PuckTracker
+from jhockey.JeVoisArucoDetector import JeVoisArucoDetector
 from jhockey.FieldHomography import FieldHomography
 from jhockey.Broadcaster import Broadcaster
 from jhockey.GameGUI import GameGUI
@@ -18,6 +19,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--camera", type=int, default=0)
 parser.add_argument("--match-length", type=int, default=10)
 parser.add_argument("--video-feed", action="store_true")
+parser.add_argument("--jevois", action="store_true")
 args = parser.parse_args()
 
 black_1px = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII="
@@ -26,17 +28,20 @@ placeholder = Response(
 )
 
 gui = GameGUI(video_feed=args.video_feed)
-cam = ThreadedCamera(src=args.camera).start()
-aruco = ArucoDetector().start(cam)
+if args.jevois:
+    aruco = JeVoisArucoDetector().start()
+else:
+    cam = ThreadedCamera(src=args.camera).start()
+    aruco = ArucoDetector().start(cam)
 field_homography = FieldHomography()
 rob_track = RobotTracker(field_homography).start(aruco)
-puck_track = PuckTracker(field_homography).start(cam)
-broadcaster = Broadcaster(puck_track, rob_track).start()
+# puck_track = PuckTracker(field_homography).start(cam)
+broadcaster = Broadcaster(rob_track).start()
 timer = PausableTimer()
 gm = GameManager(
     match_length_sec=args.match_length,
     broadcaster=broadcaster,
-    puck_tracker=puck_track,
+    # puck_tracker=puck_track,
     robot_tracker=rob_track,
     field_homography=field_homography,
     aruco_detector=aruco,

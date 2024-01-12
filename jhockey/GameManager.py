@@ -1,5 +1,5 @@
 from typing_extensions import Protocol
-from .utils import Team, GUIData, GameState, PuckState, RobotState, AruCoTag
+from .utils import Team, GUIData, PuckState, RobotState, AruCoTag, GameState
 from typing import Optional
 import numpy as np
 import threading
@@ -200,7 +200,9 @@ class GameManager:
                 aruco_tags = self.aruco_detector.get()
                 if len(aruco_tags) > 0:
                     self.field_homography.find_homography(aruco_tags)
-                self.puck_state = self.puck_tracker.get()
+                self.puck_state = None
+                if self.puck_tracker is not None:
+                    self.puck_state = self.puck_tracker.get()
                 self.robot_states = self.robot_tracker.get()
 
                 if self.seconds_remaining <= 0:
