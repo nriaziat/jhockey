@@ -36,6 +36,8 @@ Run main.py or use Docker. A GUI will be hosted at localhost:8080. There are sev
 
 Arguments: ```--camera, --config, --match_length, --puck_tracking```
 
+All positional types use integer millimeters and milliradians as default units. Time is given in seconds by default, but broadcasted to the robots in integer nanoseconds. 
+
 
 ## License
 

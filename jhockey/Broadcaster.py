@@ -1,7 +1,7 @@
 from __future__ import annotations
 from threading import Thread
 from typing import Protocol
-from .types import PuckState, RobotState, Team, BroadcasterMessage
+from .types import PuckState, RobotState, Team, BroadcasterMessage, GameState
 
 class ThreadedNode(Protocol):
     def get(self) -> PuckState | dict[Team, list[RobotState]]:
@@ -14,6 +14,13 @@ class GameManager(Protocol):
     def seconds_remaining(self) -> float:
         """
         Returns the number of seconds remaining in the match.
+        """
+        ...
+
+    @property
+    def state(self) -> GameState:
+        """
+        Returns the state of the game.
         """
         ...
 
@@ -59,6 +66,7 @@ class Broadcaster:
                 time=int(self.game_manager.seconds_remaining * 1e9),
                 puck=puck_msg,
                 robots=self.robot_tracker.get(),
+                enabled=self.game_manager.state == GameState.RUNNING,
             )
             self.broadcast(self.message)
 

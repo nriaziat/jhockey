@@ -5,6 +5,7 @@ import numpy as np
 import threading
 from typing import Any
 
+
 class PausableTimer(Protocol):
     def start(self):
         """
@@ -86,7 +87,7 @@ class GameManager:
         gui: Optional[GUI] = None,
         timer: PausableTimer = None,
     ):
-        '''
+        """
         Parameters
         ----------
         match_length_sec : int, optional
@@ -105,7 +106,7 @@ class GameManager:
             The GUI object, by default None
         timer : PausableTimer
             The timer object.
-        '''
+        """
         self.match_length_sec = match_length_sec
         self.start_time = None
         self.score = {Team.RED: 0, Team.BLUE: 0}
@@ -172,9 +173,7 @@ class GameManager:
         if not self.timer.timestarted:
             return self.match_length_sec
         remaining = self.match_length_sec - self.timer.get().seconds
-        if remaining <= 0:
-            remaining = 0
-        return remaining
+        return remaining if remaining > 0 else 0
 
     def pause(self):
         """

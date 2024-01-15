@@ -25,16 +25,16 @@ class GameState(Enum):
 
 @dataclass
 class RobotState:
-    x: int
-    y: int
-    theta: int
+    x: int  # mm 
+    y: int  # mm  
+    theta: int  # millirad
     found: bool
 
 
 @dataclass
 class PuckState:
-    x: int
-    y: int
+    x: int  # mm 
+    y: int  # mm 
     found: bool
 
 
@@ -43,7 +43,7 @@ class GUIData:
     state: GameState
     seconds_remaining: float
     puck: PuckState
-    score: dict
+    score: dict[Team : int]
     score_as_string: str
     robot_states: dict[Team : list[RobotState]]
     aruco_tags: list[AruCoTag]
@@ -54,3 +54,4 @@ class BroadcasterMessage:
     puck: PuckState  # optional, if implemented
     # Passing a Team as a key will return a list of RobotStates in order of robot ID
     robots: dict[Team : list[RobotState]]
+    enabled: bool 
