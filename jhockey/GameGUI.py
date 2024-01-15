@@ -96,7 +96,7 @@ class GameGUI:
                 "Debug Mode", on_click=self.toggle_debug, color="orange"
             )
             self.camera_connected = ui.icon(
-                "videocam", 
+                "videocam", color="green"
             ).bind_visibility_from(self, "camera_connected").classes('text-5xl')
             self.camera_disconnected = ui.icon(
                 "videocam_off", color="red"

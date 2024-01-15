@@ -19,6 +19,7 @@ class ThreadedCamera:
         """
         self.connected = False
         self.src = src
+        self.frame = None
         self.name = name    
         self.lock = Lock()
 

@@ -12,6 +12,13 @@ class Camera(Protocol):
         """
         ...
 
+    @property
+    def connected(self) -> bool:
+        """
+        Returns whether the camera is connected.
+        """
+        ...
+
 
 class ArucoDetector:
     def __init__(self, name="ArUco Detector"):
@@ -43,6 +50,7 @@ class ArucoDetector:
         Returns:
             ArucoDetector: The ArucoDetector object.
         """
+        self.camera = cam
         t = Thread(target=self.run, name=self.name, args=(cam,))
         t.daemon = True
         t.start()
@@ -72,3 +80,9 @@ class ArucoDetector:
 
     def stop(self):
         self.stopped = True
+
+    @property
+    def connected(self):
+        if self.camera is None:
+            return False
+        return self.camera.connected
