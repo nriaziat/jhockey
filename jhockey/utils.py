@@ -2,7 +2,6 @@ from enum import Enum, auto
 from dataclasses import dataclass
 import numpy as np
 
-
 @dataclass
 class AruCoTag:
     id: int
@@ -51,6 +50,7 @@ class GUIData:
 
 @dataclass(kw_only=True)
 class BroadcasterMessage:
-    time: float
-    puck: PuckState
+    time: int  # nsec since match start
+    puck: PuckState  # optional, if implemented
+    # Passing a Team as a key will return a list of RobotStates in order of robot ID
     robots: dict[Team : list[RobotState]]

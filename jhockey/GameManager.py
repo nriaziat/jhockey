@@ -173,7 +173,7 @@ class GameManager:
             return self.match_length_sec
         remaining = self.match_length_sec - self.timer.get().seconds
         if remaining <= 0:
-            self.reset()
+            remaining = 0
         return remaining
 
     def pause(self):
