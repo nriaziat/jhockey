@@ -2,7 +2,7 @@ import json
 import numpy as np
 import cv2 as cv
 from .types import AruCoTag
-
+import logging
 
 class FieldHomography:
     '''
@@ -51,8 +51,10 @@ class FieldHomography:
         try:
             detected_tags = np.array([(elem.corners[0][0], elem.corners[0][1]) for elem in field_tags])
         except KeyError:
+            logging.warning("KeyError in find_homography")
             return None
         if len(detected_tags) < 4:
+            logging.warning(f"Not enough tags for homography detected: {len(detected_tags)} tags received, expected 4.")
             return None
         _, self.H = cv.findHomography(detected_tags,
             np.array(

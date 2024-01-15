@@ -2,7 +2,7 @@ from threading import Thread
 from .types import AruCoTag
 import serial
 import numpy as np
-from serial.serialutil import SerialException
+import logging
 
 class JeVoisArucoDetector:
     def __init__(self, name="ArUco Detector", port="/dev/ttyACM0", baudrate=115200):
@@ -33,6 +33,7 @@ class JeVoisArucoDetector:
 
     def get(self) -> list[AruCoTag]:
         if len(self.corners) == 0 or len(self.ids) == 0:
+            logging.warning("No ArUco tags found")
             return []
         tag_list = []
         for id, corner in enumerate(self.corners):
@@ -43,10 +44,13 @@ class JeVoisArucoDetector:
         line = ser.readline().rstrip()
         tok = line.split()
         if len(tok) < 1:
+            logging.warning("Invalid line from JeVois: %s", line)
             return
         if tok[0] != "N2":
+            logging.warning("Invalid line from JeVois: %s", line)
             return
         if len(tok) != 6:
+            logging.warning("Invalid line from JeVois: %s", line)
             return
         _, id, x, y, w, h = tok
         # coordinates are returned in "standard" coordinates, where center is at (0, 0), right edge is at 1000 and bottom edge is at 750

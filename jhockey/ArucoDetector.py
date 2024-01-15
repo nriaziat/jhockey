@@ -3,6 +3,7 @@ from threading import Thread, Lock
 from typing import Protocol
 import numpy as np
 from .types import AruCoTag
+import logging
 
 class Camera(Protocol):
     def read(self) -> np.ndarray:
@@ -49,6 +50,7 @@ class ArucoDetector:
 
     def get(self) -> list[AruCoTag]:
         if self.corners is None or self.ids is None:
+            logging.warning("No ArUco tags found")
             return []
         tag_list = []
         for corner, id in zip(self.corners, self.ids):
@@ -64,6 +66,7 @@ class ArucoDetector:
                 return
             frame = cam.read()
             if frame is None:
+                logging.warning("No frame received")
                 continue
             self.detect(frame)
 

@@ -3,7 +3,7 @@ import json
 from typing import Any, Protocol
 import numpy as np
 from threading import Thread, Lock
-
+import logging
 
 class FieldHomography(Protocol):
     def convert_px2world(self, x: int, y: int) -> np.ndarray:
@@ -34,14 +34,17 @@ class RobotTracker:
     """
     RobotTracker class to maintain the state of the robots using ArUco markers.
     """
-    def __init__(self, field_homography: FieldHomography, aruco_config: str = "aruco_config.json"):
-        '''
+
+    def __init__(
+        self, field_homography: FieldHomography, aruco_config: str = "aruco_config.json"
+    ):
+        """
         Parameters
         ----------
         field_homography : FieldHomography
             The field homography object.
         aruco_config : str, optional
-            The path to the ArUco configuration file, by default "aruco_config.json". 
+            The path to the ArUco configuration file, by default "aruco_config.json".
             The configuration file should contain the ids of the ArUco markers on the robots and which team they belong to.
             For example:
             {
@@ -53,7 +56,7 @@ class RobotTracker:
                     "red_2": 8
                 }
             }
-        '''
+        """
         self.robot_states = {
             Team.BLUE: [RobotState(0, 0, 0, False), RobotState(0, 0, 0, False)],
             Team.RED: [RobotState(0, 0, 0, False), RobotState(0, 0, 0, False)],
@@ -70,52 +73,50 @@ class RobotTracker:
         self.robot_lock = Lock()
 
     def start(self, aruco: ArucoDetector):
-        '''
+        """
         Start the a new thread to track robots using ArUco Detector.
         Parameters
         ----------
         aruco : ArucoDetector
             The ArUco detector object.
-        '''
+        """
         t = Thread(target=self.run, name="Robot Tracker", args=(aruco,))
         t.daemon = True
         t.start()
         return self
 
     def update(self, aruco_tags: list[AruCoTag]):
+        if self.field_homography.H is None:
+            logging.warning("Homography not set")
+            return
+        not_found_list = [
+            tag_id for tag_id in self.tag_tags.keys() if tag not in aruco_tags
+        ]
+        for tag_id in not_found_list:
+            team, robot_num = self.team_tags[tag_id]
+            self.robot_states[team][robot_num] = RobotState(0, 0, False)
         for tag in aruco_tags:
-            try:
-                team = self.team_tags[tag.id][0]
-            except KeyError:
-                continue  # not a robot tag, probably a field tag
-            if self.field_homography.H is None:
-                continue
-            coor = self.field_homography.convert_px2world(tag.corners[0][0], tag.corners[0][1])
-            theta = np.arctan2(coor[1], coor[0])
-            robot_num = self.team_tags[id][1]
-            with self.robot_lock:
-                self.robot_states[team][robot_num].x = coor[0]
-                self.robot_states[team][robot_num].y = coor[1]
-                self.robot_states[team][robot_num].theta = theta
-                self.robot_states[team][robot_num].found = True
-
+            team, robot_num = self.team_tags[tag.id]
+            center_px = np.mean(tag.corners, axis=0)
+            center_mm = self.field_homography.convert_px2world(
+                center_px[0], center_px[1]
+            )
+            self.robot_states[team][robot_num] = RobotState(
+                center_mm[0], center_mm[1], found=True
+            )
 
     def run(self, aruco: ArucoDetector):
         while True:
             if self.stopped:
                 return
-
-            for state in self.robot_states.values():
-                for robot in state:
-                    robot.x = np.random.randint(0, 1000)
-                    robot.y = np.random.randint(0, 1000)
-                    robot.theta = np.random.randint(0, 360)
-
             aruco_tags = aruco.get()
-            if len(aruco_tags) > 0:
-                self.update(aruco_tags)
+            tag_list = [tag for tag in aruco_tags if tag.id in self.team_tags.keys()]
+            if len(tag_list) > 0:
+                self.update(tag_list)
+            else:
+                logging.warning("No robot markers found")
 
-    def get(self) -> tuple[list[np.ndarray], list[int], list[np.ndarray]]:
+    def get(self) -> dict[Team : list[RobotState]]:
         return self.robot_states
 
     def stop(self):

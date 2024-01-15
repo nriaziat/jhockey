@@ -3,6 +3,7 @@ from functools import partial
 import time
 import signal
 from nicegui import Client, app, ui
+import logging
 
 
 def format_score(team: Team, score: int) -> str:
@@ -111,9 +112,10 @@ class GameGUI:
         self.reset_state = True
 
     def update(self, data: GUIData):
-        self.state = data.state
+        logging.info("GameGUI updated, state: %s", data.state.name)
         self.toggle_state = False
         self.reset_state = False
+        self.state = data.state
         self.add_score = None
         self.score = data.score
         self.score_display.text = data.score_as_string
