@@ -17,10 +17,9 @@ class ThreadedCamera:
             mtx (numpy.ndarray, optional): The camera matrix. Defaults to None.
             dist (numpy.ndarray, optional): The distortion coefficients. Defaults to None.
         """
-        self.stream = cv.VideoCapture(src)
-        (self.grabbed, self.frame) = self.stream.read()
-
-        self.name = name
+        self.connected = False
+        self.src = src
+        self.name = name    
         self.lock = Lock()
 
         self.mtx = mtx
@@ -41,6 +40,14 @@ class ThreadedCamera:
         return self
 
     def update(self):
+        while self.connected is False:
+            try:
+                self.stream = cv.VideoCapture(self.src)
+                self.connected = True
+            except:
+                self.connected = False
+
+        (self.grabbed, self.frame) = self.stream.read()
         while True:
             if self.stopped:
                 return

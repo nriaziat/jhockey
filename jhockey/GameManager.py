@@ -58,6 +58,13 @@ class ThreadedNode(Protocol):
     def get(self) -> Any:
         ...
 
+class ArucoDetector(Protocol):
+    def get(self) -> list[AruCoTag]:
+        ...
+
+    @property
+    def connected(self) -> bool:
+        ...
 
 class Broadcaster(Protocol):
     def set_message(self, message: BroadcasterMessage) -> None:
@@ -100,7 +107,7 @@ class GameManager:
         puck_tracker: ThreadedNode = None,
         robot_tracker: ThreadedNode = None,
         field_homography: FieldHomography = None,
-        aruco_detector: ThreadedNode = None,
+        aruco_detector: ArucoDetector = None,
         gui: Optional[GUI] = None,
         timer: PausableTimer = None,
     ):
@@ -179,6 +186,7 @@ class GameManager:
         if self.state == GameState.PAUSED:
             self.timer.resume()
         else:
+            self.score = {Team.RED: 0, Team.BLUE: 0}
             self.timer.start()
 
     @property
@@ -204,7 +212,6 @@ class GameManager:
         """
         self.timer.reset()
         self.start_time = None
-        self.score = {Team.RED: 0, Team.BLUE: 0}
 
     def update(self):
         """
@@ -214,7 +221,7 @@ class GameManager:
             aruco_tags = []
             if self.state == GameState.RUNNING:
                 aruco_tags = self.aruco_detector.get()
-                if len(aruco_tags) > 0:
+                if len(aruco_tags) > 3:
                     self.field_homography.find_homography(aruco_tags)
                 self.puck_state = None
                 if self.puck_tracker is not None:
@@ -225,7 +232,7 @@ class GameManager:
                     self.state = GameState.STOPPED
 
             if self.broadcaster is not None:
-                time_left_usec = int(self.timer.get().microsecond) if self.timer.timestarted else self.match_length_sec * 1e6
+                time_left_usec = int(self.timer.get().microseconds) if self.timer.timestarted else self.match_length_sec * 1e6
                 self.broadcaster.set_message(
                     BroadcasterMessage(
                         time=time_left_usec,
@@ -260,5 +267,6 @@ class GameManager:
             score_as_string=self.score_as_string,
             robot_states=self.robot_states,
             aruco_tags=aruco_tags,
+            cam_connected=self.aruco_detector.connected,
         )
         self.gui.update(send_data)  # used to thread lock this, dont think we need to anymore

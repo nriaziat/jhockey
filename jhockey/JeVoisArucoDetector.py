@@ -21,6 +21,7 @@ class JeVoisArucoDetector:
         self.name = name
         self.corners = [None] * 8
         self.stopped = False
+        self.connected = False
 
     def start(self):
         '''
@@ -32,11 +33,12 @@ class JeVoisArucoDetector:
         return self
 
     def get(self) -> list[AruCoTag]:
-        if len(self.corners) == 0:
+        found_corners = [corner for corner in self.corners if corner is not None]
+        if len(found_corners) == 0:
             logging.warning("No ArUco tags found")
             return []
         tag_list = []
-        for id, corner in enumerate(self.corners):
+        for id, corner in enumerate(found_corners):
             tag_list.append(AruCoTag(id=id, corners=corner))
         return tag_list
 
@@ -58,6 +60,13 @@ class JeVoisArucoDetector:
 
 
     def run(self):
+        while self.connected == False:
+            try:
+                with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
+                    self.connected = True
+            except:
+                pass
+            
         with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
             while True:
                 if self.stopped:

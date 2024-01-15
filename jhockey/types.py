@@ -48,6 +48,7 @@ class GUIData:
     score_as_string: str
     robot_states: dict[Team : list[RobotState]]
     aruco_tags: list[AruCoTag]
+    cam_connected: bool
 
 @dataclass(kw_only=True)
 class BroadcasterMessage:
