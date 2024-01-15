@@ -1,9 +1,18 @@
 from typing_extensions import Protocol
-from .types import Team, GUIData, PuckState, RobotState, AruCoTag, GameState
+from .types import (
+    Team,
+    GUIData,
+    PuckState,
+    RobotState,
+    AruCoTag,
+    GameState,
+    BroadcasterMessage,
+)
 from typing import Optional
 import numpy as np
 import threading
 from typing import Any
+from datetime import datetime
 
 
 class PausableTimer(Protocol):
@@ -25,7 +34,7 @@ class PausableTimer(Protocol):
         """
         ...
 
-    def get(self) -> float:
+    def get(self) -> datetime:
         """
         Returns the time elapsed.
         """
@@ -47,6 +56,14 @@ class PausableTimer(Protocol):
 
 class ThreadedNode(Protocol):
     def get(self) -> Any:
+        ...
+
+
+class Broadcaster(Protocol):
+    def set_message(self, message: BroadcasterMessage) -> None:
+        """
+        Sets the message to be broadcast.
+        """
         ...
 
 
@@ -111,7 +128,7 @@ class GameManager:
         self.start_time = None
         self.score = {Team.RED: 0, Team.BLUE: 0}
         self.timer = timer
-        self.broadcaster: Optional[ThreadedNode] = broadcaster
+        self.broadcaster: Optional[Broadcaster] = broadcaster
         self.puck_tracker: Optional[ThreadedNode] = puck_tracker
         self.puck_state: Optional[PuckState] = None
         self.field_homography: Optional[FieldHomography] = field_homography
@@ -207,28 +224,41 @@ class GameManager:
                 if self.seconds_remaining <= 0:
                     self.state = GameState.STOPPED
 
-            if self.gui is not None:
-                add_score = self.gui.add_score
-                if add_score is not None:
-                    self.score[add_score] += 1
-                reset_state = self.gui.reset_state
-                if reset_state:
-                    self.state = GameState.STOPPED
-                else:
-                    toggle_state = self.gui.toggle_state
-                    if toggle_state:
-                        if self.state == GameState.RUNNING:
-                            self.state = GameState.PAUSED
-                        else:
-                            self.state = GameState.RUNNING
-                send_data = GUIData(
-                    state=self.state,
-                    seconds_remaining=self.seconds_remaining,
-                    puck=self.puck_state,
-                    score=self.score,
-                    score_as_string=self.score_as_string,
-                    robot_states=self.robot_states,
-                    aruco_tags=aruco_tags,
+            if self.broadcaster is not None:
+                time_left_usec = int(self.timer.get().microsecond) if self.timer.timestarted else self.match_length_sec * 1e6
+                self.broadcaster.set_message(
+                    BroadcasterMessage(
+                        time=time_left_usec,
+                        robots=self.robot_states,
+                        puck=self.puck_state,
+                        enabled=self.state == GameState.RUNNING,
+                    )
                 )
-                with self.lock:
-                    self.gui.update(send_data)
+
+            if self.gui is not None:
+                self.update_gui(aruco_tags)
+        
+    def update_gui(self, aruco_tags: list[AruCoTag]):
+        add_score = self.gui.add_score
+        if add_score is not None:
+            self.score[add_score] += 1
+        reset_state = self.gui.reset_state
+        if reset_state:
+            self.state = GameState.STOPPED
+        else:
+            toggle_state = self.gui.toggle_state
+            if toggle_state:
+                if self.state == GameState.RUNNING:
+                    self.state = GameState.PAUSED
+                else:
+                    self.state = GameState.RUNNING
+        send_data = GUIData(
+            state=self.state,
+            seconds_remaining=self.seconds_remaining,
+            puck=self.puck_state,
+            score=self.score,
+            score_as_string=self.score_as_string,
+            robot_states=self.robot_states,
+            aruco_tags=aruco_tags,
+        )
+        self.gui.update(send_data)  # used to thread lock this, dont think we need to anymore

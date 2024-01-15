@@ -32,7 +32,7 @@ class JeVoisArucoDetector:
         return self
 
     def get(self) -> list[AruCoTag]:
-        if len(self.corners) == 0 or len(self.ids) == 0:
+        if len(self.corners) == 0:
             logging.warning("No ArUco tags found")
             return []
         tag_list = []

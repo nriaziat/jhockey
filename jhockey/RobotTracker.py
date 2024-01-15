@@ -5,6 +5,7 @@ import numpy as np
 from threading import Thread, Lock
 import logging
 
+
 class FieldHomography(Protocol):
     def convert_px2world(self, x: int, y: int) -> np.ndarray:
         """
@@ -87,22 +88,26 @@ class RobotTracker:
 
     def update(self, aruco_tags: list[AruCoTag]):
         if self.field_homography.H is None:
-            logging.warning("Homography not set")
+            # logging.warning("Homography not set")
             return
         not_found_list = [
             tag_id for tag_id in self.tag_tags.keys() if tag not in aruco_tags
         ]
         for tag_id in not_found_list:
             team, robot_num = self.team_tags[tag_id]
-            self.robot_states[team][robot_num] = RobotState(0, 0, False)
+            self.robot_states[team][robot_num] = RobotState(found=False)
         for tag in aruco_tags:
             team, robot_num = self.team_tags[tag.id]
             center_px = np.mean(tag.corners, axis=0)
             center_mm = self.field_homography.convert_px2world(
                 center_px[0], center_px[1]
             )
+            heading_millirad = 1e3 * np.arctan2(
+                tag.corners[1, 1] - tag.corners[0, 1],
+                -tag.corners[1, 0] + tag.corners[0, 0],
+            )
             self.robot_states[team][robot_num] = RobotState(
-                center_mm[0], center_mm[1], found=True
+                x=center_mm[0], y=center_mm[1], heading=heading_millirad
             )
 
     def run(self, aruco: ArucoDetector):

@@ -8,12 +8,12 @@ class FieldHomography:
     '''
     FieldHomography class to convert between the camera frame and the field frame using ArUco markers.
     '''
-    def __init__(self, param_file: str = "field_params.json"):
+    def __init__(self, param_file: str = "config.json"):
         '''
         Parameters
         ----------
         param_file : str, optional
-            The path to the field parameters file, by default "field_params.json"
+            The path to the field parameters file, by default "config.json"
             The field parameters file should contain the coordinates of the ArUco markers on the field.
             For example:
             {
@@ -51,7 +51,7 @@ class FieldHomography:
         try:
             detected_tags = np.array([(elem.corners[0][0], elem.corners[0][1]) for elem in field_tags])
         except KeyError:
-            logging.warning("KeyError in find_homography")
+            logging.warn_("KeyError in find_homography")
             return None
         if len(detected_tags) < 4:
             logging.warning(f"Not enough tags for homography detected: {len(detected_tags)} tags received, expected 4.")

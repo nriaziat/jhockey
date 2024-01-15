@@ -9,18 +9,41 @@ class ThreadedNode(Protocol):
         Returns the puck state.
         """
         ...
-
-class GameManager(Protocol):
-    def seconds_remaining(self) -> float:
+class PausableTimer(Protocol):
+    def start(self):
         """
-        Returns the number of seconds remaining in the match.
+        Starts the timer.
+        """
+        ...
+
+    def pause(self):
+        """
+        Pauses the timer.
+        """
+        ...
+
+    def resume(self):
+        """
+        Resumes the timer.
+        """
+        ...
+
+    def get(self) -> float:
+        """
+        Returns the time elapsed.
+        """
+        ...
+
+    def reset(self):
+        """
+        Resets the timer.
         """
         ...
 
     @property
-    def state(self) -> GameState:
+    def timestarted(self) -> bool:
         """
-        Returns the state of the game.
+        Returns whether the timer has started.
         """
         ...
 
@@ -31,17 +54,10 @@ class Broadcaster:
     """
 
     def __init__(
-        self,
-        *,
-        puck_tracker: ThreadedNode = None,
-        robot_tracker: ThreadedNode = None,
-        game_manager: GameManager = None,
-    ):
+        self):
         self.stopped = False
-        self.puck_tracker = puck_tracker
-        self.robot_tracker = robot_tracker
-        self.game_manager = game_manager
         self.message = None
+        self.game_state = GameState.STOPPED
 
     def start(self) -> Broadcaster:
         """
@@ -59,21 +75,14 @@ class Broadcaster:
         while True:
             if self.stopped:
                 return
-            puck_msg = (
-                self.puck_tracker.get() if self.puck_tracker else PuckState(0, 0, False)
-            )
-            self.message = BroadcasterMessage(
-                time=int(self.game_manager.seconds_remaining * 1e9),
-                puck=puck_msg,
-                robots=self.robot_tracker.get(),
-                enabled=self.game_manager.state == GameState.RUNNING,
-            )
+            if self.message is None:
+                continue
             self.broadcast(self.message)
 
-    def broadcast(self, data: dict):
+    def broadcast(self, msg: BroadcasterMessage):
         """
-        Broadcasts data to each team via wifi.
-        @param data: dictionary of data to broadcast
+        Broadcasts data to robots.
+        @param data: BroadcasterMessage to broadcast
         """
         pass
 
@@ -88,3 +97,9 @@ class Broadcaster:
         Stops the broadcaster.
         """
         self.stopped = True
+
+    def set_message(self, message: BroadcasterMessage):
+        """
+        Sets the message to be broadcast.
+        """
+        self.message = message

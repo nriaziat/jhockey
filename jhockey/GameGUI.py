@@ -15,14 +15,7 @@ class GameGUI:
     Web GUI to control the game, add score, monitor time, and start/stop gameplay.
     """
 
-    def __init__(self, *, video_feed: bool = False):
-        """
-        Parameters
-        ----------
-        video_feed : bool, optional
-            Whether to display a video feed of the game, by default False
-        """
-        self.video_feed: bool = video_feed
+    def __init__(self):
         self.state = GameState.STOPPED
         self.toggle_state = False
         self.reset_state = False
@@ -34,22 +27,9 @@ class GameGUI:
     def create_ui(self, match_length_sec: int):
         self.match_length_sec = match_length_sec
         self.seconds_remaining = match_length_sec
-        if self.video_feed:
-            self.video_feed: ui.interactive_image = ui.interactive_image().classes(
-                "w-3/4"
-            )
-            with self.video_feed:
-                self.score_display = ui.label("").classes(
-                    "absolute-bottom text-subtitle2 text-center"
-                )
-            self.video_timer = ui.timer(
-                interval=0.1,
-                callback=lambda: self.video_feed.set_source(
-                    f"/video/frame?{time.time()}"
-                ),
-            )
-        else:
-            self.score_display = ui.label("").classes("text-subtitle2 text-center")
+        
+        
+        self.score_display = ui.label("").classes("text-subtitle2 text-center")
 
         self.debug: bool = False
         with ui.column().bind_visibility_from(self, "debug"):
