@@ -1,5 +1,5 @@
 from typing_extensions import Protocol
-from .utils import Team, GUIData, PuckState, RobotState, AruCoTag, GameState
+from .types import Team, GUIData, PuckState, RobotState, AruCoTag, GameState
 from typing import Optional
 import numpy as np
 import threading

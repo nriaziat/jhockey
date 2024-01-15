@@ -1,4 +1,4 @@
-from .utils import GameState, Team, GUIData
+from .types import GameState, Team, GUIData
 from functools import partial
 import time
 import signal

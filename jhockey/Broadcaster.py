@@ -1,7 +1,7 @@
 from __future__ import annotations
 from threading import Thread
 from typing import Protocol
-from .utils import PuckState, RobotState, Team, BroadcasterMessage
+from .types import PuckState, RobotState, Team, BroadcasterMessage
 
 class ThreadedNode(Protocol):
     def get(self) -> PuckState | dict[Team, list[RobotState]]:

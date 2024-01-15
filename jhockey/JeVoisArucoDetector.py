@@ -1,5 +1,5 @@
 from threading import Thread
-from .utils import AruCoTag
+from .types import AruCoTag
 import serial
 import numpy as np
 from serial.serialutil import SerialException

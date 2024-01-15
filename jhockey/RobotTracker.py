@@ -1,4 +1,4 @@
-from .utils import Team, RobotState, AruCoTag
+from .types import Team, RobotState, AruCoTag
 import json
 from typing import Any, Protocol
 import numpy as np

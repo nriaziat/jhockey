@@ -2,7 +2,7 @@ import cv2
 from threading import Thread, Lock
 from typing import Protocol
 import numpy as np
-from .utils import AruCoTag
+from .types import AruCoTag
 
 class Camera(Protocol):
     def read(self) -> np.ndarray:

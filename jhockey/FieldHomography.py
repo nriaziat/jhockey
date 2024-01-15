@@ -1,7 +1,7 @@
 import json
 import numpy as np
 import cv2 as cv
-from .utils import AruCoTag
+from .types import AruCoTag
 
 
 class FieldHomography:

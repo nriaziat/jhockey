@@ -1,6 +1,6 @@
 import cv2 as cv
 import numpy as np
-from .utils import PuckState
+from .types import PuckState
 from typing import Protocol
 from threading import Thread
 
