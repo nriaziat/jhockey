@@ -45,6 +45,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install -r requirements.txt
 
 RUN usermod -a -G video appuser
+RUN usermod -a -G dialout appuser
 
 # Switch to the non-privileged user to run the application.
 USER appuser
