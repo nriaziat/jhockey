@@ -1,9 +1,6 @@
 from jhockey import *
 from nicegui import ui
 import argparse
-import logging
-
-logging.basicConfig(level=logging.ERROR)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--camera", type=int, default=None)
