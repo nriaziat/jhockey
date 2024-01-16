@@ -64,11 +64,7 @@ class GameGUI:
                 {"name": "x1", "label": "x1 [px]", "field": "x1"},
                 {"name": "y1", "label": "y1 [px]", "field": "y1"},
                 {"name": "x2", "label": "x2 [px]", "field": "x2"},
-                {"name": "y2", "label": "y2 [px]", "field": "y2"},
-                {"name": "x3", "label": "x3 [px]", "field": "x3"},
-                {"name": "y3", "label": "y3 [px]", "field": "y3"},
-                {"name": "x4", "label": "x4 [px]", "field": "x4"},
-                {"name": "y4", "label": "y4 [px]", "field": "y4"},
+                {"name": "y2", "label": "y2 [px]", "field": "y2"}
             ]
             self.tag_debug_tab = ui.table(columns=tag_columns, rows=[], row_key="id")
 
@@ -164,14 +160,10 @@ class GameGUI:
                 tag_rows.append(
                     {
                         "id": tag.id,
-                        "x1": tag.corners[0][0][0],
-                        "y1": tag.corners[0][0][1],
-                        "x2": tag.corners[0][1][0],
-                        "y2": tag.corners[0][1][1],
-                        "x3": tag.corners[0][2][0],
-                        "y3": tag.corners[0][2][1],
-                        "x4": tag.corners[0][3][0],
-                        "y4": tag.corners[0][3][1],
+                        "x1": tag.corners[0],
+                        "y1": tag.corners[1],
+                        "x2": tag.corners[2],
+                        "y2": tag.corners[2]
                     }
                 )
             self.tag_debug_tab.rows = tag_rows

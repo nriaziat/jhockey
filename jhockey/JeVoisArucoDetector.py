@@ -1,7 +1,6 @@
 from threading import Thread
 from .types import AruCoTag
 import serial
-import numpy as np
 import logging
 
 class JeVoisArucoDetector:
@@ -22,6 +21,7 @@ class JeVoisArucoDetector:
         self.corners = [None] * 8
         self.stopped = False
         self.connected = False
+        self.try_connect()     
 
     def start(self):
         '''
@@ -35,6 +35,8 @@ class JeVoisArucoDetector:
     def get(self) -> list[AruCoTag]:
         if not self.connected:
             return []
+        # with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
+        #     self.detect(ser)
         found_corners = [corner for corner in self.corners if corner is not None]
         if len(found_corners) == 0:
             logging.warning("No ArUco tags found")
@@ -45,23 +47,42 @@ class JeVoisArucoDetector:
         return tag_list
 
     def detect(self, ser):
-        line = ser.readline().rstrip()
+        try:
+            line = ser.readline().decode('utf-8').rstrip()
+        except serial.SerialException:
+            self.connected = False
+            logging.error("JeVois disconnected!")
+            self.stop()
+        logging.info("Line received from Jevois: %s", line)
         tok = line.split()
         if len(tok) < 1:
             logging.warning("Invalid line from JeVois: %s", line)
             return
         if tok[0] != "N2":
+            logging.warning("JeVois may be in terse mode!")
             logging.warning("Invalid line from JeVois: %s", line)
             return
         if len(tok) != 6:
             logging.warning("Invalid line from JeVois: %s", line)
             return
         _, id, x, y, w, h = tok
+        x = int(x)
+        y = int(y)
+        w = int(w)
+        h = int(h)
+        id = int(id[1:])
         # coordinates are returned in "standard" coordinates, where center is at (0, 0), right edge is at 1000 and bottom edge is at 750
-        self.corners[int(id[1:])] = np.array([x, y, x + w, y + h])
+        self.corners[id] = [x - w/2, y - h/2, x + w/2, y + h/2]
 
 
-    def run(self):
+    def run(self):       
+        with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
+            while True:
+                if self.stopped:
+                    return
+                self.detect(ser)
+
+    def try_connect(self):
         while self.connected == False:
             try:
                 with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
@@ -69,12 +90,7 @@ class JeVoisArucoDetector:
                     logging.info("Connected to JeVois camera")
             except:
                 logging.warning("Could not connect to JeVois camera. Retrying...")
-            
-        with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
-            while True:
-                if self.stopped:
-                    return
-                self.detect(ser)
+
 
     def stop(self):
         self.stopped = True
