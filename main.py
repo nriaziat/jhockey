@@ -1,13 +1,20 @@
 from jhockey import *
 from nicegui import ui
 import argparse
+import logging
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--camera", type=int, default=None)
 parser.add_argument("--match-length", type=int, default=180)
 parser.add_argument("--puck_tracking", action="store_true")
 parser.add_argument("--config", type=str, default="config.json")
+parser.add_argument("--debug", action="store_true")
 args = parser.parse_args()
+
+if args.debug:
+    logging.basicConfig(level=logging.WARNING)
+else:
+    logging.basicConfig(level=logging.ERROR)
 
 gui = GameGUI()
 if args.camera is None:
