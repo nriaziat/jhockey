@@ -65,7 +65,7 @@ class JeVoisArucoDetector:
                 with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
                     self.connected = True
             except:
-                pass
+                logging.warning("Could not connect to JeVois camera. Retrying...")
             
         with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
             while True:
