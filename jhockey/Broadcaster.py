@@ -1,21 +1,49 @@
+from __future__ import annotations
 from threading import Thread
 from typing import Protocol
-from .utils import PuckState, RobotState, Team, BroadcasterMessage
-import time
+from .types import PuckState, RobotState, Team, BroadcasterMessage, GameState
 
-
-class PuckTracker(Protocol):
-    def get(self) -> PuckState:
+class ThreadedNode(Protocol):
+    def get(self) -> PuckState | dict[Team, list[RobotState]]:
         """
         Returns the puck state.
         """
         ...
-
-
-class RobotTracker(Protocol):
-    def get(self) -> dict[Team, list[RobotState]]:
+class PausableTimer(Protocol):
+    def start(self):
         """
-        Returns the robot states.
+        Starts the timer.
+        """
+        ...
+
+    def pause(self):
+        """
+        Pauses the timer.
+        """
+        ...
+
+    def resume(self):
+        """
+        Resumes the timer.
+        """
+        ...
+
+    def get(self) -> float:
+        """
+        Returns the time elapsed.
+        """
+        ...
+
+    def reset(self):
+        """
+        Resets the timer.
+        """
+        ...
+
+    @property
+    def timestarted(self) -> bool:
+        """
+        Returns whether the timer has started.
         """
         ...
 
@@ -25,13 +53,13 @@ class Broadcaster:
     Class to broadcast location information to each team via wifi.
     """
 
-    def __init__(self, puck_tracker: PuckTracker, robot_tracker: RobotTracker):
+    def __init__(
+        self):
         self.stopped = False
-        self.puck_tracker = puck_tracker
-        self.robot_tracker = robot_tracker
         self.message = None
+        self.game_state = GameState.STOPPED
 
-    def start(self):
+    def start(self) -> Broadcaster:
         """
         Starts the broadcaster.
         """
@@ -47,21 +75,18 @@ class Broadcaster:
         while True:
             if self.stopped:
                 return
-            self.message = BroadcasterMessage(
-                time=time.time(),
-                puck=self.puck_tracker.get(),
-                robots=self.robot_tracker.get(),
-            )
+            if self.message is None:
+                continue
             self.broadcast(self.message)
 
-    def broadcast(self, data: dict):
+    def broadcast(self, msg: BroadcasterMessage):
         """
-        Broadcasts data to each team via wifi.
-        @param data: dictionary of data to broadcast
+        Broadcasts data to robots.
+        @param data: BroadcasterMessage to broadcast
         """
         pass
 
-    def get(self) -> dict:
+    def get(self) -> BroadcasterMessage:
         """
         Returns the message to be broadcasted.
         """
@@ -72,3 +97,9 @@ class Broadcaster:
         Stops the broadcaster.
         """
         self.stopped = True
+
+    def set_message(self, message: BroadcasterMessage):
+        """
+        Sets the message to be broadcast.
+        """
+        self.message = message

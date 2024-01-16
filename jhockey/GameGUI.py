@@ -1,8 +1,9 @@
-from .utils import GameState, Team, GUIData
+from .types import GameState, Team, GUIData
 from functools import partial
 import time
 import signal
 from nicegui import Client, app, ui
+import logging
 
 
 def format_score(team: Team, score: int) -> str:
@@ -14,14 +15,7 @@ class GameGUI:
     Web GUI to control the game, add score, monitor time, and start/stop gameplay.
     """
 
-    def __init__(self, *, video_feed: bool = False):
-        """
-        Parameters
-        ----------
-        video_feed : bool, optional
-            Whether to display a video feed of the game, by default False
-        """
-        self.video_feed: bool = video_feed
+    def __init__(self):
         self.state = GameState.STOPPED
         self.toggle_state = False
         self.reset_state = False
@@ -29,41 +23,44 @@ class GameGUI:
         self.score = None
         self.add_score = None
         self.last_update_time = time.time()
+        self.camera_connected = False
 
     def create_ui(self, match_length_sec: int):
         self.match_length_sec = match_length_sec
         self.seconds_remaining = match_length_sec
-        if self.video_feed:
-            self.video_feed: ui.interactive_image = ui.interactive_image().classes(
-                "w-3/4"
-            )
-            with self.video_feed:
-                self.score_display = ui.label("").classes(
-                    "absolute-bottom text-subtitle2 text-center"
-                )
-            self.video_timer = ui.timer(
-                interval=0.1,
-                callback=lambda: self.video_feed.set_source(
-                    f"/video/frame?{time.time()}"
-                ),
-            )
-        else:
-            self.score_display = ui.label("").classes("text-subtitle2 text-center")
+
+        self.score_display = ui.label("").classes("text-subtitle2 text-center")
 
         self.debug: bool = False
         with ui.column().bind_visibility_from(self, "debug"):
             robot_columns = [
-                {"name": "robot", "label": "Name", "field": "robot", "required": True, "align": "left", "sortable": True},
+                {
+                    "name": "robot",
+                    "label": "Name",
+                    "field": "robot",
+                    "required": True,
+                    "align": "left",
+                    "sortable": True,
+                },
                 {"name": "x", "label": "x [mm]", "field": "x"},
                 {"name": "y", "label": "y [mm]", "field": "y"},
-                {"name": "theta","label": "theta [deg]", "field": "theta"},
-                {"name": "found", "label": "Found", "field": "found"}
+                {"name": "theta", "label": "Heading [millirad]", "field": "theta"},
+                {"name": "found", "label": "Found", "field": "found"},
             ]
-            self.robot_debug_tab = ui.table(columns=robot_columns, rows=[], row_key="robot")
+            self.robot_debug_tab = ui.table(
+                columns=robot_columns, rows=[], row_key="robot"
+            )
             self.update_rate = ui.label("")
 
             tag_columns = [
-                {"name": "id", "label": "ID", "field": "id", "required": True, "align": "left", "sortable": True},
+                {
+                    "name": "id",
+                    "label": "ID",
+                    "field": "id",
+                    "required": True,
+                    "align": "left",
+                    "sortable": True,
+                },
                 {"name": "x1", "label": "x1 [px]", "field": "x1"},
                 {"name": "y1", "label": "y1 [px]", "field": "y1"},
                 {"name": "x2", "label": "x2 [px]", "field": "x2"},
@@ -98,6 +95,12 @@ class GameGUI:
             self.debug_button: ui.button = ui.button(
                 "Debug Mode", on_click=self.toggle_debug, color="orange"
             )
+            self.camera_connected = ui.icon(
+                "videocam", color="green"
+            ).bind_visibility_from(self, "camera_connected").classes('text-5xl')
+            self.camera_disconnected = ui.icon(
+                "videocam_off", color="red"
+            ).bind_visibility_from(self, "camera_connected", value=False).classes('text-5xl')
         app.on_shutdown(self.cleanup)
         signal.signal(signal.SIGINT, handle_sigint)
 
@@ -111,13 +114,15 @@ class GameGUI:
         self.reset_state = True
 
     def update(self, data: GUIData):
-        self.state = data.state
+        logging.info("GameGUI updated, state: %s", data.state.name)
         self.toggle_state = False
         self.reset_state = False
+        self.state = data.state
         self.add_score = None
         self.score = data.score
         self.score_display.text = data.score_as_string
         self.seconds_remaining = data.seconds_remaining
+        self.camera_connected = data.cam_connected
         robot_states = data.robot_states
         aruco_tags = data.aruco_tags
         if robot_states is not None and self.debug:
@@ -126,29 +131,29 @@ class GameGUI:
                     "robot": "Red 1",
                     "x": robot_states[Team.RED][0].x,
                     "y": robot_states[Team.RED][0].y,
-                    "theta": robot_states[Team.RED][0].theta,
-                    "found": "✅" if robot_states[Team.RED][0].found else "❌"
+                    "theta": robot_states[Team.RED][0].heading,
+                    "found": "✅" if robot_states[Team.RED][0].found else "❌",
                 },
                 {
                     "robot": "Red 2",
                     "x": robot_states[Team.RED][1].x,
                     "y": robot_states[Team.RED][1].y,
-                    "theta": robot_states[Team.RED][1].theta,
-                    "found": "✅" if robot_states[Team.RED][1].found else "❌"
+                    "theta": robot_states[Team.RED][1].heading,
+                    "found": "✅" if robot_states[Team.RED][1].found else "❌",
                 },
                 {
                     "robot": "Blue 1",
                     "x": robot_states[Team.BLUE][0].x,
                     "y": robot_states[Team.BLUE][0].y,
-                    "theta": robot_states[Team.BLUE][0].theta,
-                    "found": "✅" if robot_states[Team.BLUE][0].found else "❌"
+                    "theta": robot_states[Team.BLUE][0].heading,
+                    "found": "✅" if robot_states[Team.BLUE][0].found else "❌",
                 },
                 {
                     "robot": "Blue 2",
                     "x": robot_states[Team.BLUE][1].x,
                     "y": robot_states[Team.BLUE][1].y,
-                    "theta": robot_states[Team.BLUE][1].theta,
-                    "found": "✅" if robot_states[Team.BLUE][1].found else "❌"
+                    "theta": robot_states[Team.BLUE][1].heading,
+                    "found": "✅" if robot_states[Team.BLUE][1].found else "❌",
                 },
             ]
             self.robot_debug_tab.rows = robot_rows
@@ -172,7 +177,10 @@ class GameGUI:
             self.tag_debug_tab.rows = tag_rows
 
         self.update_start_button(self.state)
-        update_rate = 1 / (time.time() - self.last_update_time)
+        try:
+            update_rate = 1 / (time.time() - self.last_update_time)
+        except ZeroDivisionError:
+            update_rate = 0
         self.last_update_time = time.time()
         self.update_rate.text = f"GUI Update Rate: {update_rate:.1e} Hz"
 

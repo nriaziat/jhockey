@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from dataclasses import dataclass
 import numpy as np
-
+from typing import Optional
 
 @dataclass
 class AruCoTag:
@@ -26,16 +26,16 @@ class GameState(Enum):
 
 @dataclass
 class RobotState:
-    x: int
-    y: int
-    theta: int
-    found: bool
+    x: int = 0  # mm 
+    y: int = 0 # mm  
+    heading: int = 0 # millirad
+    found: bool = True
 
 
 @dataclass
 class PuckState:
-    x: int
-    y: int
+    x: int  # mm 
+    y: int  # mm 
     found: bool
 
 
@@ -43,14 +43,17 @@ class PuckState:
 class GUIData:
     state: GameState
     seconds_remaining: float
-    puck: PuckState
-    score: dict
+    puck: Optional[PuckState]
+    score: dict[Team : int]
     score_as_string: str
     robot_states: dict[Team : list[RobotState]]
     aruco_tags: list[AruCoTag]
+    cam_connected: bool
 
 @dataclass(kw_only=True)
 class BroadcasterMessage:
-    time: float
-    puck: PuckState
+    time: int  # usec since match start
+    puck: Optional[PuckState]  # optional, if implemented
+    # Passing a Team as a key will return a list of RobotStates in order of robot ID
     robots: dict[Team : list[RobotState]]
+    enabled: bool 
