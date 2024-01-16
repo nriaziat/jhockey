@@ -33,6 +33,8 @@ class JeVoisArucoDetector:
         return self
 
     def get(self) -> list[AruCoTag]:
+        if not self.connected:
+            return []
         found_corners = [corner for corner in self.corners if corner is not None]
         if len(found_corners) == 0:
             logging.warning("No ArUco tags found")
@@ -64,6 +66,7 @@ class JeVoisArucoDetector:
             try:
                 with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
                     self.connected = True
+                    logging.info("Connected to JeVois camera")
             except:
                 logging.warning("Could not connect to JeVois camera. Retrying...")
             

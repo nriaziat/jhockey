@@ -115,6 +115,8 @@ class RobotTracker:
             if self.stopped:
                 return
             aruco_tags = aruco.get()
+            if len(aruco_tags) == 0:
+                continue
             tag_list = [tag for tag in aruco_tags if tag.id in self.team_tags.keys()]
             if len(tag_list) > 0:
                 self.update(tag_list)
