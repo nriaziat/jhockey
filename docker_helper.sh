@@ -4,10 +4,23 @@
 os=$(uname -s)
 platform=$(uname -m)
 device_type="jevois"
+device_port="0"
+config_file="none"
+debug="low"
 while test $# -gt 0
 do
     case "$1" in
         --camera*) device_type="camera"
+            device_port="$2"
+            ;;
+        --config*) config_file="$2"
+            echo "Using config file: $config_file"
+            ;;
+        --debug) debug="mid"
+            echo "Debug mode enabled"
+            ;;
+        --debug-info) debug="high"
+            echo "Verbose Debug mode enabled"
             ;;
     esac
     shift
@@ -31,7 +44,7 @@ else
 fi
 
 if [[ $device_type == "camera" ]]; then
-    devices="--device=/dev/video0"
+    devices="--device=/dev/video$device_port"
 fi
 
 if [[ $platform == "x86_64" ]]; then
@@ -39,7 +52,7 @@ if [[ $platform == "x86_64" ]]; then
 elif [[ $platform == "aarch64" ]]; then
     docker_img=nriaziat/jhockey:rpi
 elif [[ $platform == "arm64" ]]; then
-    echo "Running on Apple Silicon should use Rosetta."
+    echo "Warning: Running on Apple Silicon should use Rosetta!"
     docker_img=nriaziat/jhockey
 else
     echo "Unsupported platform: $platform"
@@ -47,6 +60,18 @@ else
 fi
 
 # Use the Docker command with the appropriate parameters
-cmd="$docker_cmd run --rm -it --net=host $devices $docker_img $@"
-echo $cmd
+if [[ $config_file != "none" ]]; then
+    cmd="$docker_cmd run --rm -it -v $config_file:$config_file --net=host $devices $docker_img --config $config_file"
+else 
+    cmd="$docker_cmd run --rm -it --net=host $devices $docker_img"
+fi
+if [[ $device_type == "camera" ]]; then
+    cmd="$cmd --camera $device_port"
+fi
+if [[ $debug == "mid" ]]; then
+    cmd="$cmd --debug"
+elif [[ $debug == "high" ]]; then
+    cmd="$cmd --debug-info"
+fi
+echo "Docker Command: $cmd"
 $cmd
