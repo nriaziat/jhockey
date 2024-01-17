@@ -53,6 +53,7 @@ class JeVoisArucoDetector:
             self.connected = False
             logging.error("JeVois disconnected!")
             self.stop()
+            return
         logging.info("Line received from Jevois: %s", line)
         tok = line.split()
         if len(tok) < 1:
@@ -72,7 +73,10 @@ class JeVoisArucoDetector:
         h = int(h)
         id = int(id[1:])
         # coordinates are returned in "standard" coordinates, where center is at (0, 0), right edge is at 1000 and bottom edge is at 750
-        self.corners[id] = [x - w/2, y - h/2, x + w/2, y + h/2]
+        try: 
+            self.corners[id] = [x - w/2, y - h/2, x + w/2, y + h/2]
+        except IndexError:
+            logging.error(f"ArUco tag detected outside of expected range: {id}")
 
 
     def run(self):       
