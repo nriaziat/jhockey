@@ -7,7 +7,7 @@
 - fastapi
 - nicegui
 - numpy
-- opencv_contrib_python [if not using Jevois]
+- opencv_contrib_python 
 - Docker [optional]
 
 ## Installation
