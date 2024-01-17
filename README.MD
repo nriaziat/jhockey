@@ -24,11 +24,26 @@
     python3 main.py
     ```
 
-    Or, using Docker
+    Or, to build with Docker on x86
     ```shell
     docker build . --tag jhockey:latest
-    docker run -it --rm --device /dev/video0 jhockey 
+    docker run -it --rm --device /dev/ttyACM0 jhockey 
+    docker run -it --rm --device /dev/video0 jhockey --camera 0
     ```
+    
+    Or, to build with Docker on Raspberry Pi. For performance reasons, it is not recommended to run without the JeVois. 
+    ```shell
+    docker build . --platform=aarch64 --tag jhockey:rpi
+    docker run -it --rm --device /dev/ttyACM0 jhockey:rpi 
+    ```
+
+    Or, to pull the DockerHub image:
+    ```shell
+    ./docker_helper.sh # will pull appropriate image from Docker Hub
+    ```
+### Raspberry Pi Setup
+
+If running with Docker on a Raspberry Pi, please follow the instructions [here](https://docs.docker.com/engine/install/debian/) for 64-bit OS (32-bit is not implemented for this project). It is recommended to run the [Linux Post-Install](https://docs.docker.com/engine/install/linux-postinstall/) to avoid using Docker with sudo.
 
 ## Usage
 
@@ -36,7 +51,7 @@ Run main.py or use Docker. A GUI will be hosted at localhost:8080. There are sev
 
 Arguments: ```--camera, --config, --match_length, --puck_tracking```
 
-All positional types use integer millimeters and milliradians as default units. Time is given in seconds by default, but broadcasted to the robots in integer nanoseconds. 
+All positional types use integer millimeters and milliradians as default units. Time is given in seconds by default, but broadcasted to the robots in integer microseconds. 
 
 
 ## License
