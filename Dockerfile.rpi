@@ -4,8 +4,9 @@
 # If you need more help, visit the Dockerfile reference guide at
 # https://docs.docker.com/engine/reference/builder/
 
-ARG PYTHON_VERSION=3.11.5
-FROM python:${PYTHON_VERSION}-slim as base
+ARG PYTHON_VERSION=3.11
+# FROM arm32v7/python:${PYTHON_VERSION}-slim as base
+FROM balenalib/raspberrypi3-64-python:${PYTHON_VERSION}-build as base
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -27,25 +28,22 @@ RUN adduser \
     --no-create-home \
     --uid "${UID}" \
     appuser
-
-FROM base as pipinstall 
-
 ENV DEBIAN_FRONTEND noninteractive
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
     --mount=target=/var/cache/apt,type=cache,sharing=locked \
-    apt-get update \
-    && apt-get install libgl1-mesa-glx ffmpeg libsm6 libxext6 -y
+    apt-get update -y \
+    && apt-get install libgl1-mesa-glx ffmpeg libsm6 libxext6 -y 
 
+FROM base as pipinstall
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
 # into this layer.
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=requirements.txt \
-    python -m pip install -r requirements.txt
+    python3 -m pip install -r requirements.txt
 
-FROM pipinstall as final
-
+FROM pipinstall as final 
 RUN usermod -a -G video appuser
 RUN usermod -a -G dialout appuser
 
