@@ -1,0 +1,24 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the x86 Docker image
+      run: 
+        docker build . --file Dockerfile --tag nriaziat/jhockey:$(date +%s)
+        docker push nriaziat/jhockey:$(date +%s)
+    - name: Build the aarch64 Docker image
+      run: 
+        docker build . --file Dockerfile.rpi --tag nriaziat/jhockey:rpi-$(date +%s)
+        docker push nriaziat/jhockey:rpi-$(date +%s)  
