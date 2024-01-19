@@ -26,7 +26,6 @@ jobs:
         name: Build and push x86
         uses: docker/build-push-action@v5
         with:
-          context: .
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/jhockey:latest
@@ -34,7 +33,6 @@ jobs:
         name: Build and push arm
         uses: docker/build-push-action@v5
         with:
-          context: .
           file: ./Dockerfile.rpi
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/jhockey:rpi-latest
