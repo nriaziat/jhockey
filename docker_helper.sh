@@ -7,6 +7,7 @@ device_type="jevois"
 device_port="0"
 config_file="none"
 debug="low"
+radio_port="/dev/ttyUSB0"
 while test $# -gt 0
 do
     case "$1" in
@@ -22,6 +23,9 @@ do
         --debug-info) debug="high"
             echo "Verbose Debug mode enabled"
             ;;
+        --radio_port*) 
+            radio_port="$2"
+            ;;
     esac
     shift
 done
@@ -32,7 +36,7 @@ if [[ $os == "Linux" ]]; then
 
 elif [[ $os == "Darwin" ]]; then
     docker_cmd="docker"
-    devices="--device=/dev/cu.usbmodem*"
+    devices="--device=/dev/cu.usbmodem14101"
 
 elif [[ $os == "Windows_NT" ]]; then
     docker_cmd="docker.exe"
@@ -47,13 +51,14 @@ if [[ $device_type == "camera" ]]; then
     devices="--device=/dev/video$device_port"
 fi
 
+devices="$devices --radio_port=$radio_port"
+
 if [[ $platform == "x86_64" ]]; then
     docker_img=nriaziat/jhockey:latest
 elif [[ $platform == "aarch64" ]]; then
     docker_img=nriaziat/jhockey:rpi
 elif [[ $platform == "arm64" ]]; then
-    echo "Warning: Running on Apple Silicon should use Rosetta!"
-    docker_img=nriaziat/jhockey
+    docker_img=nriaziat/jhockey:rpi
 else
     echo "Unsupported platform: $platform"
     exit 1

@@ -76,6 +76,18 @@ class BroadcasterMessage:
 
     def __str__(self) -> str:
         if self.puck is not None:
-            return f"{self.time},{self.puck.x},{self.puck.y},{self.robots[Team.RED][0].x},{self.robots[Team.RED][0].y},{self.robots[Team.BLUE][0].x},{self.robots[Team.BLUE][0].y},{self.enabled}"
+            return f"{self.time:},
+                     {self.puck.x},{self.puck.y},
+                     {self.robots[Team.RED][0].x},{self.robots[Team.RED][0].y},
+                     {self.robots[Team.RED][1].x},{self.robots[Team.RED][1].y},
+                     {self.robots[Team.BLUE][0].x},{self.robots[Team.BLUE][0].y},
+                     {self.robots[Team.BLUE][1].x},{self.robots[Team.BLUE][1].y},
+                     {self.enabled}"
+
         else:
-            return f"{self.time},{self.robots[Team.RED][0].x},{self.robots[Team.RED][0].y},{self.robots[Team.BLUE][0].x},{self.robots[Team.BLUE][0].y},{self.enabled}"
+            return f"{self.time},
+                     {self.robots[Team.RED][0].x},{self.robots[Team.RED][0].y},
+                     {self.robots[Team.RED][1].x},{self.robots[Team.RED][1].y},
+                     {self.robots[Team.BLUE][0].x},{self.robots[Team.BLUE][0].y},
+                     {self.robots[Team.BLUE][1].x},{self.robots[Team.BLUE][1].y},
+                     {self.enabled}"

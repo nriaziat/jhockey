@@ -89,7 +89,7 @@ class XBeeBroadcaster:
         Broadcasts data to robots.
         @param data: BroadcasterMessage to broadcast
         """
-        self.xbee.send_data_broadcast(msg)
+        self.xbee.send_data_broadcast(str(msg))
 
     def get(self) -> BroadcasterMessage:
         """

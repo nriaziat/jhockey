@@ -45,11 +45,15 @@
 
 If running with Docker on a Raspberry Pi, please follow the instructions [here](https://docs.docker.com/engine/install/debian/) for 64-bit OS (32-bit is not implemented for this project). It is recommended to run the [Linux Post-Install](https://docs.docker.com/engine/install/linux-postinstall/) to avoid using Docker with sudo.
 
+## XBee Setup
+
+See [ZigBee_Setup.md](./micropython/ZigBee_Setup.md) for instructions on how to set up the XBee radios.
+
 ## Usage
 
 Run main.py or use Docker. A GUI will be hosted at localhost:8080. There are several command line arguments that can be used to edit the match length (in seconds), enable puck tracking, use an external camera instead of the JeVois, and pass custom config files. When passing config files through Docker ensure ```docker -v /path/to/your/config``` is included with the command line arguments. For more information, use ```--help, -h```.
 
-Arguments: ```--camera, --config, --match_length, --puck_tracking```
+Arguments: ```--camera, --config, --match_length, --puck_tracking, --debug, --debug_info, --radio_port```
 
 All positional types use integer millimeters and milliradians as default units. Time is given in seconds by default, but broadcasted to the robots in integer microseconds. 
 

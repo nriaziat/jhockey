@@ -1,15 +1,16 @@
-from jhockey import GameGUI, FieldHomography, RobotTracker, PausableTimer, Broadcaster, GameManager
+from jhockey import GameGUI, FieldHomography, RobotTracker, PausableTimer, XBeeBroadcaster, GameManager
 from nicegui import ui
 import argparse
 import logging
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--camera", type=int, default=None)
-parser.add_argument("--match-length", type=int, default=180)
-parser.add_argument("--puck_tracking", action="store_true")
-parser.add_argument("--config", type=str, default="config.json")
-parser.add_argument("--debug", action="store_true")
-parser.add_argument("--debug-info", action="store_true")
+parser.add_argument("--camera", type=int, default=None, help="Camera port, if not using JeVois.")
+parser.add_argument("--match-length", type=int, default=180, help="Match length in seconds.")
+parser.add_argument("--puck_tracking", action="store_true", help="Enable puck tracking.")
+parser.add_argument("--config", type=str, default="config.json", help="ArUco config .json file.")
+parser.add_argument("--debug", action="store_true", help="Enable debug logging.")
+parser.add_argument("--debug-info", action="store_true", help="Enable debug logging at info level.")
+parser.add_argument("--radio_port", type=str, default="/dev/ttyUSB0",  help="Radio port (i.e., if using Zigbee).")
 args = parser.parse_args()
 
 if args.debug_info:
@@ -34,7 +35,7 @@ if args.puck_tracking:
     puck_track = PuckTracker(field_homography).start(aruco)
 else:
     puck_track = None
-broadcaster = Broadcaster().start()
+broadcaster = XBeeBroadcaster(port=args.xbee_port).start()
 timer = PausableTimer()
 gm = GameManager(
     match_length_sec=args.match_length,
