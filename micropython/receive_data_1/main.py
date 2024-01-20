@@ -26,12 +26,16 @@ while True:
 
             string = receivedMsg[startString:endString]
 
+            print(string)
+
             if endString == -1:
                 receivedMsg2 = xbee.receive()["payload"].decode("utf-8")
                 endString2 = receivedMsg2.find("}")
 
                 if endString2 < receivedMsg2.find("{"):
                     string = string + receivedMsg2[:(endString2)]
+
+            print(string)
 
             string = string.replace("'", "")
             string = string.split(", ")
