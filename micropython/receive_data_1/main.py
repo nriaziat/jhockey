@@ -1,4 +1,5 @@
 import xbee
+from parse_string import parse_string
 from sys import stdin, stdout
 
 ROBOT_ID = "BA"
@@ -21,34 +22,27 @@ while True:
         receivedMsg = last_payload["payload"].decode("utf-8")
 
         if receivedMsg:
-            startString = receivedMsg.find("{") + 1
-            endString = receivedMsg.find("}", startString)
+            start = receivedMsg.find(">")
+            end = receivedMsg.find(">", start + 1)
 
-            string = receivedMsg[startString:endString]
+            if end != -1:
+                string = receivedMsg[start + 1 : end]
 
-            print(string)
+            else:
+                payload2 = xbee.receive()
+                receivedMsg2 = payload2["payload"].decode("utf-8")
 
-            if endString == -1:
-                receivedMsg2 = xbee.receive()["payload"].decode("utf-8")
-                endString2 = receivedMsg2.find("}")
+                start2 = receivedMsg2.find(">")
+                string = receivedMsg[start + 1 :] + receivedMsg2[0:start2]
 
-                if endString2 < receivedMsg2.find("{"):
-                    string = string + receivedMsg2[:(endString2)]
-
-            print(string)
-
-            string = string.replace("'", "")
-            string = string.split(", ")
-            string = [x.split(": ") for x in string]
-            data = {x[0]: x[1] for x in string}
+            parsed_string = parse_string(string)
 
             out = (
-                str(data["match"])
+                parsed_string["time"]
                 + ","
-                + str(data["time"])
+                + parsed_string["matchbit"]
                 + ","
-                + str(data[ROBOT_ID])
-                + "\n"
+                + parsed_string[ROBOT_ID]
             )
 
             stdout.buffer.write(out.encode())
