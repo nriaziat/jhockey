@@ -1,5 +1,6 @@
 def parse_string(data):
     # Define the lengths of each field
+    start_len = 1
     time_len = 6
     match_len = 1
 
@@ -9,13 +10,13 @@ def parse_string(data):
 
     # Initialize the dictionary to store the parsed data
     parsed_data = {
-        # "start": data[0:start_len],
-        "time": data[0:time_len],
-        "match": data[time_len : time_len + match_len],
+        "start": data[0:start_len],
+        "time": data[start_len : start_len + time_len],
+        "match": data[start_len + time_len : start_len + time_len + match_len],
     }
 
     # Set the initial index after the start, time, and match fields
-    current_index = time_len + match_len
+    current_index = start_len + time_len + match_len
 
     # Iterate to parse each robot's data
     for i in range(4):
