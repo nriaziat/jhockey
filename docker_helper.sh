@@ -51,15 +51,15 @@ if [[ $device_type == "camera" ]]; then
     devices="--device=/dev/video$device_port"
 fi
 
-devices="$devices --radio_port=$radio_port"
+devices="$devices --device=$radio_port"
 
 docker_img=nriaziat/jhockey:latest
 
 # Use the Docker command with the appropriate parameters
 if [[ $config_file != "none" ]]; then
-    cmd="$docker_cmd run --rm -it -v $config_file:$config_file --net=host $devices $docker_img --config $config_file"
+    cmd="$docker_cmd run --rm -it -v $config_file:$config_file --net=host $devices $docker_img --config $config_file --radio_port $radio_port"
 else 
-    cmd="$docker_cmd run --rm -it --net=host $devices $docker_img"
+    cmd="$docker_cmd run --rm -it --net=host $devices $docker_img --radio_port $radio_port"
 fi
 if [[ $device_type == "camera" ]]; then
     cmd="$cmd --camera $device_port"
