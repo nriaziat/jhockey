@@ -4,9 +4,8 @@ from typing import Protocol
 from .types import PuckState, RobotState, Team, BroadcasterMessage, GameState
 from digi.xbee.devices import XBeeDevice
 
-
 class ThreadedNode(Protocol):
-    def get(self) -> PuckState | dict[Team, list[RobotState]]:
+    def get(self) -> PuckState | dict[Team, list[RobotState]] | dict[int, RobotState]:
         """
         Returns the puck state.
         """
@@ -54,7 +53,7 @@ class PausableTimer(Protocol):
 
 class XBeeBroadcaster:
     """
-    Class to broadcast location information to each team via wifi.
+    Class to broadcast location information to each team via XBee protocol.
     """
 
     def __init__(self, port="/dev/ttyUSB0"):
@@ -68,7 +67,7 @@ class XBeeBroadcaster:
         """
         Starts the broadcaster.
         """
-        t = Thread(target=self.run, name="Broadcaster")
+        t = Thread(target=self.run, name="XBee Broadcaster")
         t.daemon = True
         t.start()
         return self

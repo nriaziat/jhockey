@@ -3,9 +3,10 @@ from .types import AruCoTag
 import serial
 import logging
 
+
 class JeVoisArucoDetector:
-    def __init__(self, name="ArUco Detector", port="/dev/ttyACM0", baudrate=115200):
-        '''
+    def __init__(self, name="JeVois ArUco Detector", port="/dev/ttyACM0", baudrate=115200):
+        """
         Parameters
         ----------
         name : str, optional
@@ -14,19 +15,19 @@ class JeVoisArucoDetector:
             The serial port to connect to, by default "/dev/ttyACM0".
         baudrate : int, optional
             The baudrate of the serial connection, by default 115200
-        '''
+        """
         self.port = port
         self.baudrate = baudrate
         self.name = name
         self.corners = [None] * 8
         self.stopped = False
         self.connected = False
-        self.try_connect()     
+        self.try_connect()
 
     def start(self):
-        '''
+        """
         Start the a new thread to read and parse ArUco data from the JeVois camera.
-        '''
+        """
         t = Thread(target=self.run, name=self.name)
         t.daemon = True
         t.start()
@@ -48,7 +49,7 @@ class JeVoisArucoDetector:
 
     def detect(self, ser):
         try:
-            line = ser.readline().decode('utf-8').rstrip()
+            line = ser.readline().decode("utf-8").rstrip()
         except serial.SerialException:
             self.connected = False
             logging.error("JeVois disconnected!")
@@ -73,13 +74,12 @@ class JeVoisArucoDetector:
         h = int(h)
         id = int(id[1:])
         # coordinates are returned in "standard" coordinates, where center is at (0, 0), right edge is at 1000 and bottom edge is at 750
-        try: 
-            self.corners[id] = [x - w/2, y - h/2, x + w/2, y + h/2]
+        try:
+            self.corners[id] = [x - w / 2, y - h / 2, x + w / 2, y + h / 2]
         except IndexError:
             logging.error(f"ArUco tag detected outside of expected range: {id}")
 
-
-    def run(self):       
+    def run(self):
         with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
             while True:
                 if self.stopped:
@@ -94,7 +94,6 @@ class JeVoisArucoDetector:
                     logging.info("Connected to JeVois camera")
             except:
                 logging.warning("Could not connect to JeVois camera. Retrying...")
-
 
     def stop(self):
         self.stopped = True

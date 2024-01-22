@@ -75,7 +75,7 @@ class Broadcaster(Protocol):
 
 
 class FieldHomography(Protocol):
-    def find_homography(self, field_tags: list[AruCoTag]) -> np.ndarray:
+    def find_homography(self, field_tags: list[AruCoTag]) -> None:
         """
         Updates the field homography.
         """
@@ -140,7 +140,7 @@ class GameManager:
         self.puck_state: Optional[PuckState] = None
         self.field_homography: Optional[FieldHomography] = field_homography
         self.robot_tracker: Optional[ThreadedNode] = robot_tracker
-        self.robot_states: Optional[dict[Team : list[RobotState]]] = None
+        self.robot_states: Optional[dict[Team : list[RobotState]] | dict[int, RobotState]] = None
         self.aruco_detector: Optional[ThreadedNode] = aruco_detector
         self.gui: Optional[GUI] = gui
         self.gui.create_ui(self.match_length_sec)
@@ -151,7 +151,7 @@ class GameManager:
         """
         Starts the thread.
         """
-        t = threading.Thread(target=self.update)
+        t = threading.Thread(target=self.update, name="Game Manager")
         t.daemon = True
         t.start()
         return self

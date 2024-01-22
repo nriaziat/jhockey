@@ -47,7 +47,7 @@ class FieldHomography:
         }
         self.H = None
 
-    def find_homography(self, field_tags: list[AruCoTag]) -> np.ndarray:
+    def find_homography(self, field_tags: list[AruCoTag]) -> None:
         try:
             detected_tags = np.array([(elem.corners[0][0], elem.corners[0][1]) for elem in field_tags])
         except KeyError:
@@ -65,7 +65,6 @@ class FieldHomography:
             ),
         )
         self.H_inv = np.linalg.inv(self.H)
-        return self.H
 
     def convert_cam2world(self, x: int, y: int) -> np.ndarray:
         """

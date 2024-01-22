@@ -1,10 +1,4 @@
 {
-    "ids": {
-        "blue_1": 4,
-        "blue_2": 5,
-        "red_1": 6,
-        "red_2": 7
-    },
     "field_tags": [ 
         {
             "id": 0,

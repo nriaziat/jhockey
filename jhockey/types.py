@@ -46,7 +46,7 @@ class GUIData:
     puck: Optional[PuckState]
     score: dict[Team:int]
     score_as_string: str
-    robot_states: dict[Team : list[RobotState]]
+    robot_states: dict[Team : list[RobotState]] | dict[int:RobotState]
     aruco_tags: list[AruCoTag]
     cam_connected: bool
 
@@ -56,7 +56,7 @@ class BroadcasterMessage:
     time: int  # usec since match start
     puck: Optional[PuckState]  # optional, if implemented
     # Passing a Team as a key will return a list of RobotStates in order of robot ID
-    robots: dict[Team : list[RobotState]]
+    robots: dict[Team : list[RobotState]] | dict[int:RobotState]
     enabled: bool
 
     def to_dict(self) -> dict:
@@ -75,19 +75,12 @@ class BroadcasterMessage:
             }
 
     def __str__(self) -> str:
-        if self.puck is not None:
-            return f"{self.time:},
-                     {self.puck.x},{self.puck.y},
-                     {self.robots[Team.RED][0].x},{self.robots[Team.RED][0].y},
-                     {self.robots[Team.RED][1].x},{self.robots[Team.RED][1].y},
-                     {self.robots[Team.BLUE][0].x},{self.robots[Team.BLUE][0].y},
-                     {self.robots[Team.BLUE][1].x},{self.robots[Team.BLUE][1].y},
-                     {self.enabled}"
-
-        else:
-            return f"{self.time},
-                     {self.robots[Team.RED][0].x},{self.robots[Team.RED][0].y},
-                     {self.robots[Team.RED][1].x},{self.robots[Team.RED][1].y},
-                     {self.robots[Team.BLUE][0].x},{self.robots[Team.BLUE][0].y},
-                     {self.robots[Team.BLUE][1].x},{self.robots[Team.BLUE][1].y},
-                     {self.enabled}"
+        # return f">{self.time:06d},
+        #         {self.enabled:1d},
+        #         AA,{self.robots[Team.RED][0].x:04d},{self.robots[Team.RED][0].y:04d}, {self.robots[Team.RED][0].heading:04d},
+        #         AB,{self.robots[Team.RED][1].x:04d},{self.robots[Team.RED][1].y:04d}, {self.robots[Team.RED][1].heading:04d},
+        #         BA,{self.robots[Team.BLUE][0].x:04d},{self.robots[Team.BLUE][0].y:04d}, {self.robots[Team.BLUE][0].heading:04d},
+        #         BB,{self.robots[Team.BLUE][1].xL:04d},{self.robots[Team.BLUE][1].y:04d}, {self.robots[Team.BLUE][1].heading:04d}"
+        message = f">{self.time:06d},{self.enabled:1d}"
+        for tag in self.robots:
+            message += f",{tag:02d},{self.robots[tag].x:04d},{self.robots[tag].y:04d},{self.robots[tag].heading:04d}"
