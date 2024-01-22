@@ -2,14 +2,31 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: 
+      - "main"
+      - "devel"
   pull_request:
-    branches: [ "master" ]
-
+    branches: 
+      - "main"
+      - "devel"
 jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            nriaziat/jhockey
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha            
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -26,15 +43,19 @@ jobs:
         name: Build and push x86
         uses: docker/build-push-action@v5
         with:
+          context: .
           file: ./Dockerfile
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/jhockey:latest
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
       -
         name: Build and push arm
         uses: docker/build-push-action@v5
         with:
+          context: .
           file: ./Dockerfile.rpi
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/jhockey:rpi-latest
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
           
