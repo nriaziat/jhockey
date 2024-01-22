@@ -55,8 +55,9 @@ Run main.py or use Docker. A GUI will be hosted at localhost:8080. There are sev
 
 Arguments: ```--camera, --config, --match_length, --puck_tracking, --debug, --debug_info, --radio_port```
 
-All positional types use integer millimeters and milliradians as default units. Time is given in seconds by default, but broadcasted to the robots in integer microseconds. 
+All positional types use integer centimeters and centiradians as default units. Time is given in seconds by default, but broadcasted to the robots in integer deciseconds. 
 
+Message Format: ```>TIME_LEFT[4] ENABLED[1] ... ID[2] X[3] Y[3] THETA[3] ... \n``` without spaces.
 
 ## License
 

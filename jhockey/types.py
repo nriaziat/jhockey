@@ -26,16 +26,16 @@ class GameState(Enum):
 
 @dataclass
 class RobotState:
-    x: int = 0  # mm
-    y: int = 0  # mm
-    heading: int = 0  # millirad
+    x: int = 0  # cm
+    y: int = 0  # cm
+    heading: int = 0  # centirad
     found: bool = True
 
 
 @dataclass
 class PuckState:
-    x: int  # mm
-    y: int  # mm
+    x: int  # cm
+    y: int  # cm
     found: bool
 
 
@@ -53,34 +53,26 @@ class GUIData:
 
 @dataclass(kw_only=True)
 class BroadcasterMessage:
-    time: int  # usec since match start
-    puck: Optional[PuckState]  # optional, if implemented
+    _max_size = 7
+    time: int  # deciseconds until match end
     # Passing a Team as a key will return a list of RobotStates in order of robot ID
     robots: dict[Team : list[RobotState]] | dict[int:RobotState]
     enabled: bool
 
     def to_dict(self) -> dict:
-        if self.puck is not None:
-            return {
-                "time": self.time,
-                "puck": self.puck,
-                "robots": self.robots,
-                "enabled": self.enabled,
-            }
-        else:
-            return {
-                "time": self.time,
-                "robots": self.robots,
-                "enabled": self.enabled,
-            }
+        return {
+            "time": self.time,
+            "robots": self.robots,
+            "enabled": self.enabled,
+        }
 
     def __str__(self) -> str:
-        # return f">{self.time:06d},
-        #         {self.enabled:1d},
-        #         AA,{self.robots[Team.RED][0].x:04d},{self.robots[Team.RED][0].y:04d}, {self.robots[Team.RED][0].heading:04d},
-        #         AB,{self.robots[Team.RED][1].x:04d},{self.robots[Team.RED][1].y:04d}, {self.robots[Team.RED][1].heading:04d},
-        #         BA,{self.robots[Team.BLUE][0].x:04d},{self.robots[Team.BLUE][0].y:04d}, {self.robots[Team.BLUE][0].heading:04d},
-        #         BB,{self.robots[Team.BLUE][1].xL:04d},{self.robots[Team.BLUE][1].y:04d}, {self.robots[Team.BLUE][1].heading:04d}"
-        message = f">{self.time:06d},{self.enabled:1d}"
+        message = f">{self.time:04d}{self.enabled:1d}"  # 6 chars
+        # Maximum broadcast size is 94 bytes, so we can only send 7 robots at a time
         for tag in self.robots:
-            message += f",{tag:02d},{self.robots[tag].x:04d},{self.robots[tag].y:04d},{self.robots[tag].heading:04d}"
+            if len(message) + 1 >= self._max_size:
+                break
+            message += f"{tag:02d}{self.robots[tag].x:03d}{self.robots[tag].y:03d}{self.robots[tag].heading:03d}" # 11 chars
+        # add end of message character
+        message += "\n"
+        return message
