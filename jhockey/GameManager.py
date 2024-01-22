@@ -9,7 +9,6 @@ from .types import (
     BroadcasterMessage,
 )
 from typing import Optional
-import numpy as np
 import threading
 from typing import Any
 from datetime import datetime
