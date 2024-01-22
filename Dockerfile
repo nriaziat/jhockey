@@ -28,13 +28,13 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-FROM base as pipinstall 
-
 ENV DEBIAN_FRONTEND noninteractive
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
     --mount=target=/var/cache/apt,type=cache,sharing=locked \
     apt-get update \
     && apt-get install libgl1-mesa-glx ffmpeg libsm6 libxext6 -y
+
+FROM base as pipinstall 
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
