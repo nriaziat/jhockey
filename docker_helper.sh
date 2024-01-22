@@ -53,16 +53,7 @@ fi
 
 devices="$devices --radio_port=$radio_port"
 
-if [[ $platform == "x86_64" ]]; then
-    docker_img=nriaziat/jhockey:latest
-elif [[ $platform == "aarch64" ]]; then
-    docker_img=nriaziat/jhockey:rpi
-elif [[ $platform == "arm64" ]]; then
-    docker_img=nriaziat/jhockey:rpi
-else
-    echo "Unsupported platform: $platform"
-    exit 1
-fi
+docker_img=nriaziat/jhockey:latest
 
 # Use the Docker command with the appropriate parameters
 if [[ $config_file != "none" ]]; then
