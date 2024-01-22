@@ -19,7 +19,7 @@ class JeVoisArucoDetector:
         self.port = port
         self.baudrate = baudrate
         self.name = name
-        self.corners = [None] * 8
+        self.tags: list[AruCoTag] = []
         self.stopped = False
         self.connected = False
         self.try_connect()
@@ -38,14 +38,10 @@ class JeVoisArucoDetector:
             return []
         # with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
         #     self.detect(ser)
-        found_corners = [corner for corner in self.corners if corner is not None]
-        if len(found_corners) == 0:
+        if len(self.tags) == 0:
             logging.warning("No ArUco tags found")
             return []
-        tag_list = []
-        for id, corner in enumerate(found_corners):
-            tag_list.append(AruCoTag(id=id, corners=corner))
-        return tag_list
+        return self.tags
 
     def detect(self, ser):
         try:
@@ -74,16 +70,15 @@ class JeVoisArucoDetector:
         h = int(h)
         id = int(id[1:])
         # coordinates are returned in "standard" coordinates, where center is at (0, 0), right edge is at 1000 and bottom edge is at 750
-        try:
-            self.corners[id] = [x - w / 2, y - h / 2, x + w / 2, y + h / 2]
-        except IndexError:
-            logging.error(f"ArUco tag detected outside of expected range: {id}")
+        corners = [x - w / 2, y - h / 2, x + w / 2, y + h / 2]
+        self.tags.append(AruCoTag(id, corners))
 
     def run(self):
         with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
             while True:
                 if self.stopped:
                     return
+                self.tags = []
                 self.detect(ser)
 
     def try_connect(self):
