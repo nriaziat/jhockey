@@ -34,8 +34,6 @@ def parse_string(data):
         current_index += robot_angle_len
 
         # Store the robot's data in the dictionary
-        parsed_data[robot_id] = {
-            str(robot_x_coord) + "," + str(robot_y_coord) + "," + str(robot_angle)
-        }
+        parsed_data[robot_id] = str(robot_x_coord) + "," + str(robot_y_coord) + "," + str(robot_angle)
 
     return parsed_data

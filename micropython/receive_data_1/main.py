@@ -22,25 +22,22 @@ while True:
         receivedMsg = last_payload["payload"].decode("utf-8")
 
         if receivedMsg:
+
             start = receivedMsg.find(">")
             end = receivedMsg.find(">", start + 1)
 
             if end != -1:
-                string = receivedMsg[start + 1 : end]
+                string = receivedMsg[start:end]
 
             else:
-                payload2 = xbee.receive()
-                receivedMsg2 = payload2["payload"].decode("utf-8")
-
-                start2 = receivedMsg2.find(">")
-                string = receivedMsg[start + 1 :] + receivedMsg2[0:start2]
+                break
 
             parsed_string = parse_string(string)
 
             out = (
                 parsed_string["time"]
                 + ","
-                + parsed_string["matchbit"]
+                + parsed_string["match"]
                 + ","
                 + parsed_string[ROBOT_ID]
             )
