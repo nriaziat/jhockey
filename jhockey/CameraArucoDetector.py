@@ -63,7 +63,11 @@ class CameraArucoDetector:
             return []
         tag_list = []
         for corner, id in zip(self.corners, self.ids):
-            tag_list.append(AruCoTag(id=id[0], corners=corner))
+            center = np.mean(corner, axis=0)
+            w, h = np.linalg.norm(corner[0] - corner[1]), np.linalg.norm(
+                corner[1] - corner[2]
+            )
+            tag_list.append(AruCoTag(id=id[0], center=center, w=w, h=h))
         return tag_list
 
     def detect(self, frame):

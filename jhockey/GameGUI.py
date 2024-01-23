@@ -61,10 +61,8 @@ class GameGUI:
                     "align": "left",
                     "sortable": True,
                 },
-                {"name": "x1", "label": "x1 [px]", "field": "x1"},
-                {"name": "y1", "label": "y1 [px]", "field": "y1"},
-                {"name": "x2", "label": "x2 [px]", "field": "x2"},
-                {"name": "y2", "label": "y2 [px]", "field": "y2"},
+                {"name": "x", "label": "x [px]", "field": "x"},
+                {"name": "y", "label": "y [px]", "field": "y"}
             ]
             self.tag_debug_tab = ui.table(columns=tag_columns, rows=[], row_key="id")
 
@@ -126,36 +124,6 @@ class GameGUI:
         robot_states = data.robot_states
         aruco_tags = data.aruco_tags
         if robot_states is not None and self.debug:
-            # robot_rows = [
-            #     {
-            #         "robot": "Red 1",
-            #         "x": robot_states[Team.RED][0].x,
-            #         "y": robot_states[Team.RED][0].y,
-            #         "theta": robot_states[Team.RED][0].heading,
-            #         "found": "✅" if robot_states[Team.RED][0].found else "❌",
-            #     },
-            #     {
-            #         "robot": "Red 2",
-            #         "x": robot_states[Team.RED][1].x,
-            #         "y": robot_states[Team.RED][1].y,
-            #         "theta": robot_states[Team.RED][1].heading,
-            #         "found": "✅" if robot_states[Team.RED][1].found else "❌",
-            #     },
-            #     {
-            #         "robot": "Blue 1",
-            #         "x": robot_states[Team.BLUE][0].x,
-            #         "y": robot_states[Team.BLUE][0].y,
-            #         "theta": robot_states[Team.BLUE][0].heading,
-            #         "found": "✅" if robot_states[Team.BLUE][0].found else "❌",
-            #     },
-            #     {
-            #         "robot": "Blue 2",
-            #         "x": robot_states[Team.BLUE][1].x,
-            #         "y": robot_states[Team.BLUE][1].y,
-            #         "theta": robot_states[Team.BLUE][1].heading,
-            #         "found": "✅" if robot_states[Team.BLUE][1].found else "❌",
-            #     },
-            # ]
             robot_rows = [
                 {
                     "robot": id,
@@ -168,18 +136,17 @@ class GameGUI:
             ]
             self.robot_debug_tab.rows = robot_rows
 
-        if len(aruco_tags) > 0 and self.debug:
+        if self.debug:
             tag_rows = []
-            for tag in aruco_tags:
+            for tag in sorted(aruco_tags, key=lambda tag: tag.id):
                 tag_rows.append(
                     {
                         "id": tag.id,
-                        "x1": tag.corners[0],
-                        "y1": tag.corners[1],
-                        "x2": tag.corners[2],
-                        "y2": tag.corners[2],
+                        "x": f"{tag.center.x:.2f}",
+                        "y": f"{tag.center.y:.2f}",
                     }
                 )
+            
             self.tag_debug_tab.rows = tag_rows
 
         self.update_start_button(self.state)

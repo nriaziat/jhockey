@@ -57,6 +57,9 @@ class ThreadedNode(Protocol):
     def get(self) -> Any:
         ...
 
+    def set(self, data: Any) -> None:
+        ...
+
 class ArucoDetector(Protocol):
     def get(self) -> list[AruCoTag]:
         ...
@@ -217,24 +220,24 @@ class GameManager:
         Updates the game state.
         """
         while True:
-            aruco_tags = []
-            if self.state == GameState.RUNNING:
-                aruco_tags = self.aruco_detector.get()
-                if len(aruco_tags) > 3:
-                    self.field_homography.find_homography(aruco_tags)
-                self.puck_state = None
-                if self.puck_tracker is not None:
-                    self.puck_state = self.puck_tracker.get()
-                self.robot_states = self.robot_tracker.get()
+            self.aruco_detector.detect()
+            aruco_tags = self.aruco_detector.get()
+            self.field_homography.find_homography(aruco_tags)
+            H = self.field_homography.H
+            self.robot_tracker.set(aruco_tags, H)
+            self.puck_state = None
+            if self.puck_tracker is not None:
+                self.puck_state = self.puck_tracker.get()
+            self.robot_states = self.robot_tracker.get()
 
-                if self.seconds_remaining <= 0:
-                    self.state = GameState.STOPPED
+            if self.seconds_remaining <= 0:
+                self.state = GameState.STOPPED
 
             if self.broadcaster is not None:
-                time_left_usec = int(self.timer.get().microseconds) if self.timer.timestarted else self.match_length_sec * 1e6
+                time_left_decisecond = int(self.timer.get().total_seconds * 1e1) if self.timer.timestarted else self.match_length_sec * 1e1
                 self.broadcaster.set_message(
                     BroadcasterMessage(
-                        time=time_left_usec,
+                        time=time_left_decisecond,
                         robots=self.robot_states,
                         puck=self.puck_state,
                         enabled=self.state == GameState.RUNNING,

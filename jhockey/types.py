@@ -2,12 +2,17 @@ from enum import Enum, auto
 from dataclasses import dataclass
 from typing import Optional
 
+@dataclass
+class Point:
+    x: float
+    y: float
 
 @dataclass
 class AruCoTag:
     id: int
-    corners: list[float]
-
+    center: Point
+    w: float
+    h: float
 
 class Team(Enum):
     RED = auto()

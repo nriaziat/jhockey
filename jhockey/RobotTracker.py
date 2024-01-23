@@ -4,6 +4,8 @@ from typing import Any, Protocol
 import numpy as np
 from threading import Thread, Lock
 import logging
+import cv2 as cv
+
 
 class FieldHomography(Protocol):
     def convert_px2world(self, x: int, y: int) -> np.ndarray:
@@ -35,14 +37,10 @@ class RobotTracker:
     RobotTracker class to maintain the state of the robots using ArUco markers.
     """
 
-    def __init__(
-        self, field_homography: FieldHomography, aruco_config: str = "config.json"
-    ):
+    def __init__(self, aruco_config: str = "config.json"):
         """
         Parameters
         ----------
-        field_homography : FieldHomography
-            The field homography object.
         aruco_config : str, optional
             The path to the ArUco configuration file, by default "config.json", which contains the Tag IDs for the field.
         """
@@ -59,11 +57,11 @@ class RobotTracker:
         #     team = Team.BLUE if "blue" in id else Team.RED
         #     self.team_tags[tag_id] = team, robot_num
         self.field_tags = [tag["id"] for tag in config["field_tags"]]
-        self.field_homography = field_homography
         self.stopped = False
+        self.aruco_tags = []
         self.robot_lock = Lock()
 
-    def start(self, aruco: ArucoDetector):
+    def start(self):
         """
         Start the a new thread to track robots using ArUco Detector.
         Parameters
@@ -71,14 +69,28 @@ class RobotTracker:
         aruco : ArucoDetector
             The ArUco detector object.
         """
-        t = Thread(target=self.run, name="Robot Tracker", args=(aruco,))
+        t = Thread(target=self.run, name="Robot Tracker", args=())
         t.daemon = True
         t.start()
         return self
 
+    def convert_cam2world(self, x: int, y: int) -> np.ndarray:
+        """
+        @param x: x coordinate in pixels
+        @param y: y coordinate in pixels
+        @return: x, y coordinates in world coordinates
+        """
+        if self.H is None:
+            raise Exception("Homography not initialized")
+        return cv.perspectiveTransform(
+            np.array([x, y], dtype=np.float32).reshape(-1, 1, 2), self.H
+        )
+
     def update(self, aruco_tags: list[AruCoTag]):
-        if self.field_homography.H is None:
-            # logging.warning("Homography not set")
+        for robot in self.robot_states.values():
+            robot.found = False
+
+        if self.H is None:
             return
         # not_found_list = [
         #     tag_id for tag_id in self.tag_tags.keys() if tag not in aruco_tags
@@ -88,13 +100,18 @@ class RobotTracker:
         #     self.robot_states[team][robot_num] = RobotState(found=False)
         for tag in aruco_tags:
             # team, robot_num = self.team_tags[tag.id]
-            center_px = np.mean(tag.corners, axis=0)
-            center_mm = self.field_homography.convert_px2world(
-                center_px[0], center_px[1]
+            center_px = tag.center
+            center_mm = self.convert_cam2world(center_px.x, center_px.y).ravel()
+            corners = np.array(
+                [
+                    [tag.center.x - tag.w / 2, tag.center.y - tag.h / 2],
+                    [tag.center.x + tag.w / 2, tag.center.y - tag.h / 2],
+                    [tag.center.x + tag.w / 2, tag.center.y + tag.h / 2],
+                    [tag.center.x - tag.w / 2, tag.center.y + tag.h / 2],
+                ]
             )
             heading_millirad = 1e3 * np.arctan2(
-                tag.corners[1, 1] - tag.corners[0, 1],
-                -tag.corners[1, 0] + tag.corners[0, 0],
+                corners[1][1] - corners[0][1], corners[1][0] - corners[0][0]
             )
             # self.robot_states[team][robot_num] = RobotState(
             #     x=center_mm[0], y=center_mm[1], heading=heading_millirad
@@ -109,18 +126,25 @@ class RobotTracker:
                     x=center_mm[0], y=center_mm[1], heading=heading_millirad
                 )
 
-    def run(self, aruco: ArucoDetector):
+    def run(self):
         while True:
             if self.stopped:
                 return
-            aruco_tags = aruco.get()
-            if len(aruco_tags) == 0:
+            # aruco_tags = aruco.get()
+            if len(self.aruco_tags) == 0:
                 continue
-            tag_list = [tag for tag in aruco_tags if tag.id not in self.field_tags]
+            tag_list = [tag for tag in self.aruco_tags if tag.id not in self.field_tags]
             if len(tag_list) > 0:
                 self.update(tag_list)
             else:
                 logging.warning("No robot markers found")
+
+    def set(self, tags: list[AruCoTag], H):
+        self.H = H
+        self.aruco_tags = tags
+        tag_list = [tag for tag in self.aruco_tags if tag.id not in self.field_tags]
+        if len(tag_list) > 0:
+            self.update(tag_list)
 
     def get(self) -> dict[Team : list[RobotState]] | dict[int:RobotState]:
         return self.robot_states
