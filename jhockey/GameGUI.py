@@ -66,6 +66,8 @@ class GameGUI:
             ]
             self.tag_debug_tab = ui.table(columns=tag_columns, rows=[], row_key="id")
 
+            self.loop_rate_indicator = ui.label("")
+
         with ui.row():
             self.start_pause_button: ui.button = ui.button(
                 "Start", on_click=self.start_pause, color="green"
@@ -148,6 +150,7 @@ class GameGUI:
                 )
             
             self.tag_debug_tab.rows = tag_rows
+            self.loop_rate_indicator.text = f"Loop Rate: {data.loop_rate:.1e} Hz"
 
         self.update_start_button(self.state)
         try:
