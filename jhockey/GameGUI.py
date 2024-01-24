@@ -65,6 +65,7 @@ class GameGUI:
                 {"name": "y", "label": "y [px]", "field": "y"}
             ]
             self.tag_debug_tab = ui.table(columns=tag_columns, rows=[], row_key="id")
+            self.broadcast_msg = ui.textarea("")
 
             # self.loop_rate_indicator = ui.label("")
 
@@ -150,7 +151,8 @@ class GameGUI:
                 )
             
             self.tag_debug_tab.rows = tag_rows
-            # self.loop_rate_indicator.text = f"Loop Rate: {data.loop_rate:.1e} Hz"
+            if data.broadcast_msg is not None:
+                self.broadcast_msg.text = str(data.broadcast_msg)
 
         self.update_start_button(self.state)
         try:

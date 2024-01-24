@@ -2,10 +2,12 @@ from enum import Enum, auto
 from dataclasses import dataclass
 from typing import Optional
 
+
 @dataclass
 class Point:
     x: float
     y: float
+
 
 @dataclass
 class AruCoTag:
@@ -13,6 +15,7 @@ class AruCoTag:
     center: Point
     w: float
     h: float
+
 
 class Team(Enum):
     RED = auto()
@@ -44,19 +47,6 @@ class PuckState:
     found: bool
 
 
-@dataclass
-class GUIData:
-    state: GameState
-    seconds_remaining: float
-    puck: Optional[PuckState]
-    score: dict[Team:int]
-    score_as_string: str
-    robot_states: dict[Team : list[RobotState]] | dict[int:RobotState]
-    aruco_tags: list[AruCoTag]
-    cam_connected: bool
-    loop_rate: float
-
-
 @dataclass(kw_only=True)
 class BroadcasterMessage:
     _max_size = 7
@@ -78,7 +68,20 @@ class BroadcasterMessage:
         for tag in self.robots:
             if len(message) + 1 >= self._max_size:
                 break
-            message += f"{tag:02}{self.robots[tag].x:03}{self.robots[tag].y:03}{self.robots[tag].heading:03}" # 11 chars
+            message += f"{tag:02}{self.robots[tag].x:03}{self.robots[tag].y:03}{self.robots[tag].heading:03}"  # 11 chars
         # add end of message character
         message += "\n"
         return message
+
+
+@dataclass
+class GUIData:
+    state: GameState
+    seconds_remaining: float
+    puck: Optional[PuckState]
+    score: dict[Team:int]
+    score_as_string: str
+    robot_states: dict[Team : list[RobotState]] | dict[int:RobotState]
+    aruco_tags: list[AruCoTag]
+    cam_connected: bool
+    broadcast_msg: BroadcasterMessage

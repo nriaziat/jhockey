@@ -12,6 +12,7 @@ import threading
 from datetime import datetime
 from time import time
 
+
 class PausableTimer(Protocol):
     def start(self):
         """
@@ -58,6 +59,7 @@ class ThreadedNode(Protocol):
     def set(self, data: Any) -> None:
         ...
 
+
 class ArucoDetector(ThreadedNode):
     def get(self) -> list[AruCoTag]:
         ...
@@ -72,6 +74,7 @@ class ArucoDetector(ThreadedNode):
 
     def detect(self) -> None:
         ...
+
 
 class Broadcaster(ThreadedNode):
     def set_message(self, message: BroadcasterMessage) -> None:
@@ -112,14 +115,13 @@ class GUI(Protocol):
         Returns whether the game should be reset.
         """
         ...
-    
+
     @property
     def toggle_state(self) -> bool:
         """
         Returns whether the game should be toggled.
         """
         ...
-
 
 
 class GameManager:
@@ -169,7 +171,9 @@ class GameManager:
         self.puck_state: Optional[PuckState] = None
         self.field_homography: Optional[FieldHomography] = field_homography
         self.robot_tracker: Optional[ThreadedNode] = robot_tracker
-        self.robot_states: Optional[dict[Team : list[RobotState]] | dict[int, RobotState]] = None
+        self.robot_states: Optional[
+            dict[Team : list[RobotState]] | dict[int, RobotState]
+        ] = None
         self.aruco_detector: Optional[ArucoDetector] = aruco_detector
         self.gui: Optional[GUI] = gui
         self.gui.create_ui(self.match_length_sec)
@@ -248,7 +252,6 @@ class GameManager:
         Updates the game state.
         """
         while True:
-            t0 = time()
             if not self.aruco_detector.threading:
                 self.aruco_detector.detect()
             aruco_tags = self.aruco_detector.get()
@@ -263,20 +266,23 @@ class GameManager:
             if self.seconds_remaining <= 0:
                 self.state = GameState.STOPPED
 
+            msg = None
             if self.broadcaster is not None:
-                time_left_decisecond = self.timer.get().total_seconds * 1e1 if self.timer.timestarted else (self.match_length_sec * 1e1)
-                self.broadcaster.set_message(
-                    BroadcasterMessage(
-                        time=int(time_left_decisecond),
-                        robots=self.robot_states,
-                        enabled=self.state == GameState.RUNNING,
-                    )
+                time_left_decisecond = (
+                    self.timer.get().total_seconds * 1e1
+                    if self.timer.timestarted
+                    else (self.match_length_sec * 1e1)
                 )
-            self.loop_rate = (time() - t0) ** -1
+                msg = BroadcasterMessage(
+                    time=int(time_left_decisecond),
+                    robots=self.robot_states,
+                    enabled=self.state == GameState.RUNNING,
+                )
+                self.broadcaster.set_message(msg)
             if self.gui is not None:
-                self.update_gui(aruco_tags)
-        
-    def update_gui(self, aruco_tags: list[AruCoTag]):
+                self.update_gui(aruco_tags, msg)
+
+    def update_gui(self, aruco_tags: list[AruCoTag], broadcast_msg: BroadcasterMessage):
         add_score = self.gui.add_score
         if add_score is not None:
             self.score[add_score] += 1
@@ -299,6 +305,8 @@ class GameManager:
             robot_states=self.robot_states,
             aruco_tags=aruco_tags,
             cam_connected=self.aruco_detector.connected,
-            loop_rate=self.loop_rate,
+            broadcast_msg=broadcast_msg,
         )
-        self.gui.update(send_data)  # used to thread lock this, dont think we need to anymore
+        self.gui.update(
+            send_data
+        )  # used to thread lock this, dont think we need to anymore
