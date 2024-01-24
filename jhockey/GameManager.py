@@ -259,7 +259,7 @@ class GameManager:
                 self.state = GameState.STOPPED
 
             if self.broadcaster is not None:
-                time_left_decisecond = self.timer.get().total_seconds * 1e1 if self.timer.timestarted else self.match_length_sec * 1e1
+                time_left_decisecond = self.timer.get().total_seconds * 1e1 if self.timer.timestarted else (self.match_length_sec * 1e1)
                 self.broadcaster.set_message(
                     BroadcasterMessage(
                         time=int(time_left_decisecond),
