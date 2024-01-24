@@ -91,6 +91,13 @@ class FieldHomography(Protocol):
         """
         ...
 
+    @property
+    def H(self):
+        """
+        Returns the homography matrix.
+        """
+        ...
+
 
 class GUI(Protocol):
     def create_ui(self, match_length_sec: int) -> None:
@@ -171,9 +178,7 @@ class GameManager:
         self.puck_state: Optional[PuckState] = None
         self.field_homography: Optional[FieldHomography] = field_homography
         self.robot_tracker: Optional[ThreadedNode] = robot_tracker
-        self.robot_states: Optional[
-            dict[Team : list[RobotState]] | dict[int, RobotState]
-        ] = None
+        self.robot_states: Optional[dict[int, RobotState]] = None
         self.aruco_detector: Optional[ArucoDetector] = aruco_detector
         self.gui: Optional[GUI] = gui
         self.gui.create_ui(self.match_length_sec)

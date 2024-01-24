@@ -52,7 +52,7 @@ class BroadcasterMessage:
     _max_size = 7
     time: int  # deciseconds until match end
     # Passing a Team as a key will return a list of RobotStates in order of robot ID
-    robots: dict[Team : list[RobotState]] | dict[int:RobotState]
+    robots: dict[int:RobotState]
     enabled: bool
 
     def to_dict(self) -> dict:
@@ -81,7 +81,7 @@ class GUIData:
     puck: Optional[PuckState]
     score: dict[Team:int]
     score_as_string: str
-    robot_states: dict[Team : list[RobotState]] | dict[int:RobotState]
+    robot_states: dict[int:RobotState]
     aruco_tags: list[AruCoTag]
     cam_connected: bool
     broadcast_msg: BroadcasterMessage

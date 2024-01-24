@@ -22,6 +22,7 @@ class JeVoisArucoDetector:
         self.tags: list[AruCoTag] = []
         self.stopped = False
         self.connected = False
+        self.ser_port = None
         self.try_connect()
         self.aruco_lock = Lock()
         self.new_data = False
@@ -40,16 +41,19 @@ class JeVoisArucoDetector:
     def get(self) -> list[AruCoTag]:
         if not self.connected:
             return []
-        # with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
-        #     self.detect(ser)
         if len(self.tags) == 0:
             logging.warning("No ArUco tags found")
             return []
-        tags = self.tags
-        return tags
+        return self.tags
 
-    def detect(self):
-        with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
+    def detect(self, ser=None):
+        if ser is None:
+            with self.ser_port as ser:
+                read_serial(ser)
+        else:
+            read_serial(ser)
+        
+        def read_serial(ser):
             try:
                 line = ""
                 while line != "MARK START":
@@ -59,10 +63,12 @@ class JeVoisArucoDetector:
                 logging.error("JeVois disconnected!")
                 self.stop()
                 return
-            self.tags = []
+            tags = []
             while line != "MARK STOP":
                 line = ser.readline().decode("utf-8").rstrip()
                 if line == "MARK STOP":
+                    with self.aruco_lock:
+                        self.tags = tags
                     break
                 logging.info("Line received from Jevois: %s", line)
                 tok = line.split()
@@ -85,24 +91,26 @@ class JeVoisArucoDetector:
                 # coordinates are returned in "standard" coordinates, where center is at (0, 0), right edge is at 1000 and bottom edge is at 750
                 if id in [tag.id for tag in self.tags]:
                     # update existing tag
-                    self.tags = [tag for tag in self.tags if tag.id != id]
-                    self.tags.append(AruCoTag(id, center=Point(x, y), w=w, h=h))
+                    tags = [tag for tag in self.tags if tag.id != id]
+                    tags.append(AruCoTag(id, center=Point(x, y), w=w, h=h))
                 else:
                     # add new tag
-                    self.tags.append(AruCoTag(id, center=Point(x, y), w=w, h=h))
+                    tags.append(AruCoTag(id, center=Point(x, y), w=w, h=h))
 
     def run(self):
         while True:
             if self.stopped:
                 return
-            self.detect()
+            with self.ser_port as ser:
+                self.detect(ser)
 
     def try_connect(self):
         while self.connected == False:
             try:
-                with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
+                with serial.Serial(self.port, self.baudrate, timeout=1):
                     self.connected = True
                     logging.info("Connected to JeVois camera")
+                self.ser_port = serial.Serial(self.port, self.baudrate, timeout=1)
             except:
                 logging.warning("Could not connect to JeVois camera. Retrying...")
 

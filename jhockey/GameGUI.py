@@ -2,7 +2,7 @@ from .types import GameState, Team, GUIData
 from functools import partial
 import time
 import signal
-from nicegui import Client, app, ui
+from nicegui import Client, app, ui, core
 import logging
 
 
@@ -186,7 +186,7 @@ class GameGUI:
 async def disconnect() -> None:
     """Disconnect all clients from current running server."""
     for client_id in Client.instances:
-        await app.sio.disconnect(client_id)
+        await core.sio.disconnect(client_id)
 
 
 def handle_sigint(signum, frame) -> None:
