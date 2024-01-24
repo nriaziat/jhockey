@@ -73,12 +73,12 @@ class BroadcasterMessage:
         }
 
     def __str__(self) -> str:
-        message = f">{self.time:04d}{self.enabled:1d}"  # 6 chars
+        message = f">{self.time:04}{self.enabled:1}"  # 6 chars
         # Maximum broadcast size is 94 bytes, so we can only send 7 robots at a time
         for tag in self.robots:
             if len(message) + 1 >= self._max_size:
                 break
-            message += f"{tag:02d}{self.robots[tag].x:03d}{self.robots[tag].y:03d}{self.robots[tag].heading:03d}" # 11 chars
+            message += f"{tag:02}{self.robots[tag].x:03}{self.robots[tag].y:03}{self.robots[tag].heading:03}" # 11 chars
         # add end of message character
         message += "\n"
         return message
