@@ -5,7 +5,9 @@ import logging
 
 
 class JeVoisArucoDetector:
-    def __init__(self, name="JeVois ArUco Detector", port="/dev/ttyACM0", baudrate=115200):
+    def __init__(
+        self, name="JeVois ArUco Detector", port="/dev/ttyACM0", baudrate=115200
+    ):
         """
         Parameters
         ----------
@@ -47,12 +49,6 @@ class JeVoisArucoDetector:
         return self.tags
 
     def detect(self, ser=None):
-        if ser is None:
-            with self.ser_port as ser:
-                read_serial(ser)
-        else:
-            read_serial(ser)
-        
         def read_serial(ser):
             try:
                 line = ""
@@ -96,6 +92,12 @@ class JeVoisArucoDetector:
                 else:
                     # add new tag
                     tags.append(AruCoTag(id, center=Point(x, y), w=w, h=h))
+
+        if ser is None:
+            with self.ser_port as ser:
+                read_serial(ser)
+        else:
+            read_serial(ser)
 
     def run(self):
         while True:
