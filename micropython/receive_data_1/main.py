@@ -7,23 +7,19 @@ ROBOT_ID = "BA"
 last_payload = None
 
 while True:
-    payload = xbee.receive()
 
+    payload = xbee.receive()
     if payload:
         last_payload = payload
 
     data = stdin.buffer.read()
-
-    # if data:
-
-    # if data.decode() == "?" and last_payload is not None:
 
     if last_payload is not None:
         receivedMsg = last_payload["payload"].decode("utf-8")
 
         if receivedMsg:
             start = receivedMsg.find(">")
-            end = receivedMsg.find(";")
+            end = receivedMsg.find(";") + 1
 
             if end != -1:
                 string = receivedMsg[start:end]
@@ -36,6 +32,7 @@ while True:
                     + parsed_string["matchbit"]
                     + ","
                     + parsed_string[ROBOT_ID]
+                    + "\n"
                 )
 
                 stdout.buffer.write(out.encode())
