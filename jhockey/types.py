@@ -54,6 +54,7 @@ class GUIData:
     robot_states: dict[Team : list[RobotState]] | dict[int:RobotState]
     aruco_tags: list[AruCoTag]
     cam_connected: bool
+    loop_rate: float
 
 
 @dataclass(kw_only=True)
