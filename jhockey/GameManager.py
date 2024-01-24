@@ -77,9 +77,9 @@ class ArucoDetector(ThreadedNode):
 
 
 class Broadcaster(ThreadedNode):
-    def set_message(self, message: BroadcasterMessage) -> None:
+    def broadcast(self, message: BroadcasterMessage) -> None:
         """
-        Sets the message to be broadcast.
+        Broadcasts data to robots.
         """
         ...
 
@@ -257,8 +257,6 @@ class GameManager:
         Updates the game state.
         """
         while True:
-            if not self.aruco_detector.threading:
-                self.aruco_detector.detect()
             aruco_tags = self.aruco_detector.get()
             self.field_homography.find_homography(aruco_tags)
             H = self.field_homography.H
@@ -267,23 +265,21 @@ class GameManager:
             if self.puck_tracker is not None:
                 self.puck_state = self.puck_tracker.get()
             self.robot_states = self.robot_tracker.get()
-
             if self.seconds_remaining <= 0:
                 self.state = GameState.STOPPED
 
-            msg = None
+            time_left_decisecond = (
+                self.timer.get().total_seconds() * 1e1
+                if self.timer.timestarted
+                else (self.match_length_sec * 1e1)
+            )
+            msg = BroadcasterMessage(
+                time=int(time_left_decisecond),
+                robots=self.robot_states,
+                enabled=self.state == GameState.RUNNING,
+            )
             if self.broadcaster is not None:
-                time_left_decisecond = (
-                    self.timer.get().total_seconds * 1e1
-                    if self.timer.timestarted
-                    else (self.match_length_sec * 1e1)
-                )
-                msg = BroadcasterMessage(
-                    time=int(time_left_decisecond),
-                    robots=self.robot_states,
-                    enabled=self.state == GameState.RUNNING,
-                )
-                self.broadcaster.set_message(msg)
+                self.broadcaster.broadcast(msg)
             if self.gui is not None:
                 self.update_gui(aruco_tags, msg)
 
@@ -297,10 +293,8 @@ class GameManager:
         else:
             toggle_state = self.gui.toggle_state
             if toggle_state:
-                if self.state == GameState.RUNNING:
-                    self.state = GameState.PAUSED
-                else:
-                    self.state = GameState.RUNNING
+                self.state = self.state.toggle()
+
         send_data = GUIData(
             state=self.state,
             seconds_remaining=self.seconds_remaining,

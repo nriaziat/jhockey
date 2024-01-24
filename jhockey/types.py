@@ -1,6 +1,7 @@
 from enum import Enum, auto
 from dataclasses import dataclass
 from typing import Optional
+import logging
 
 
 @dataclass
@@ -31,6 +32,12 @@ class GameState(Enum):
     RUNNING = auto()
     PAUSED = auto()
 
+    def toggle(self):
+        """
+        Toggles the game state.
+        """
+        return GameState.PAUSED if self == GameState.RUNNING else GameState.RUNNING
+
 
 @dataclass
 class RobotState:
@@ -49,7 +56,7 @@ class PuckState:
 
 @dataclass(kw_only=True)
 class BroadcasterMessage:
-    _max_size = 7
+    _max_size = 114 + 6 + 1
     time: int  # deciseconds until match end
     # Passing a Team as a key will return a list of RobotStates in order of robot ID
     robots: dict[int:RobotState]
@@ -63,12 +70,15 @@ class BroadcasterMessage:
         }
 
     def __str__(self) -> str:
-        message = f">{self.time:04}{self.enabled:1}"  # 6 chars
+        message = f">{self.enabled:1}{self.time:04}"  # 6 chars
         # Maximum broadcast size is 94 bytes, so we can only send 7 robots at a time
-        for tag in self.robots:
-            if len(message) + 1 >= self._max_size:
-                break
+        for tag in self.robots.copy():
             message += f"{tag:02}{self.robots[tag].x:03}{self.robots[tag].y:03}{self.robots[tag].heading:03}"  # 11 chars
+            if len(message) + 1 >= self._max_size:
+                logging.warning(
+                    "Broadcast message is too large, truncating robots list"
+                )
+                break
         # add end of message character
         message += "\n"
         return message

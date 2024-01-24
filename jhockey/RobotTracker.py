@@ -89,19 +89,7 @@ class RobotTracker:
         )
 
     def update(self, aruco_tags: list[AruCoTag]):
-        for robot in self.robot_states.values():
-            robot.found = False
-
-        if self.H is None:
-            return
-        # not_found_list = [
-        #     tag_id for tag_id in self.tag_tags.keys() if tag not in aruco_tags
-        # ]
-        # for tag_id in not_found_list:
-        #     team, robot_num = self.team_tags[tag_id]
-        #     self.robot_states[team][robot_num] = RobotState(found=False)
-        for tag in aruco_tags:
-            # team, robot_num = self.team_tags[tag.id]
+        def get_pose_from_aruco(tag: AruCoTag):
             center_px = tag.center
             center_mm = self.convert_cam2world(center_px.x, center_px.y).ravel()
             corners = np.array(
@@ -112,21 +100,37 @@ class RobotTracker:
                     [tag.center.x - tag.w / 2, tag.center.y + tag.h / 2],
                 ]
             )
-            heading_millirad = 1e3 * np.arctan2(
-                corners[1][1] - corners[0][1], corners[1][0] - corners[0][0]
+            heading_rad = np.arctan2(
+                corners[1][1] - tag.center.y, corners[1][0] - tag.center.x
             )
-            # self.robot_states[team][robot_num] = RobotState(
-            #     x=center_mm[0], y=center_mm[1], heading=heading_millirad
-            # )
-            try:
-                self.robot_states[tag.id].x = center_mm[0]
-                self.robot_states[tag.id].y = center_mm[1]
-                self.robot_states[tag.id].heading = heading_millirad
-                self.robot_states[tag.id].found = True
-            except KeyError:
-                self.robot_states[tag.id] = RobotState(
-                    x=center_mm[0], y=center_mm[1], heading=heading_millirad
+            if heading_rad < 0:
+                heading_rad += 2 * np.pi
+            return center_mm, heading_rad
+
+        if self.H is None:
+            return
+    
+        for robot_id in self.robot_states:
+            if robot_id not in [tag.id for tag in aruco_tags]:
+                del self.robot_states[robot_id]
+            else:
+                self.robot_states[robot_id].found = True
+                center_mm, heading_rad = get_pose_from_aruco(
+                    [tag for tag in aruco_tags if tag.id == robot_id][0]
                 )
+                self.robot_states[robot_id].x = int(center_mm[0] / 10)
+                self.robot_states[robot_id].y = int(center_mm[1] / 10)
+                self.robot_states[robot_id].heading = int(heading_rad * 100)
+                aruco_tags = [tag for tag in aruco_tags if tag.id != robot_id]
+
+        for new_tag in aruco_tags:
+            center_mm, heading_rad = get_pose_from_aruco(new_tag)
+            self.robot_states[new_tag.id] = RobotState(
+                x=int(center_mm[0] / 10),
+                y=int(center_mm[1] / 10),
+                heading=int(heading_rad * 100),
+                found=True,
+            )
 
     def run(self):
         while True:
@@ -139,6 +143,7 @@ class RobotTracker:
             if len(tag_list) > 0:
                 self.update(tag_list)
             else:
+                self.robot_states = {} 
                 logging.warning("No robot markers found")
 
     def filter_tags(self, tag_list: list[AruCoTag]):
@@ -147,11 +152,8 @@ class RobotTracker:
     def set(self, tags: list[AruCoTag], H):
         self.H = H
         self.aruco_tags = tags
-        tag_list = self.filter_tags(self.aruco_tags)
-        if len(tag_list) > 0 and not self.threading:
-            self.update(tag_list)
 
-    def get(self) -> dict[Team : list[RobotState]] | dict[int:RobotState]:
+    def get(self) -> dict[int:RobotState]:
         return self.robot_states
 
     def stop(self):

@@ -57,7 +57,7 @@ Arguments: ```--camera, --config, --match_length, --puck_tracking, --debug, --de
 
 All positional types use integer centimeters and centiradians as default units. Time is given in seconds by default, but broadcasted to the robots in integer deciseconds. 
 
-Message Format: ```>TIME_LEFT[4] ENABLED[1] ... ID[2] X[3] Y[3] THETA[3] ... \n``` without spaces.
+Message Format: ```>ENABLED[1] TIME_LEFT[4]  ... ID[2] X[3] Y[3] THETA[3] ... \n``` without spaces.
 
 ## License
 

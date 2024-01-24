@@ -42,9 +42,9 @@ class GameGUI:
                     "align": "left",
                     "sortable": True,
                 },
-                {"name": "x", "label": "x [mm]", "field": "x"},
-                {"name": "y", "label": "y [mm]", "field": "y"},
-                {"name": "theta", "label": "Heading [millirad]", "field": "theta"},
+                {"name": "x", "label": "x [cm]", "field": "x"},
+                {"name": "y", "label": "y [cm]", "field": "y"},
+                {"name": "theta", "label": "Heading [centirad]", "field": "theta"},
                 {"name": "found", "label": "Found", "field": "found"},
             ]
             self.robot_debug_tab = ui.table(
@@ -65,7 +65,7 @@ class GameGUI:
                 {"name": "y", "label": "y [px]", "field": "y"}
             ]
             self.tag_debug_tab = ui.table(columns=tag_columns, rows=[], row_key="id")
-            self.broadcast_msg = ui.textarea("")
+            self.broadcast_msg = ui.label("")
 
             # self.loop_rate_indicator = ui.label("")
 
@@ -152,7 +152,7 @@ class GameGUI:
             
             self.tag_debug_tab.rows = tag_rows
             if data.broadcast_msg is not None:
-                self.broadcast_msg.text = str(data.broadcast_msg)
+                self.broadcast_msg.text = "Broadcast Message: " + str(data.broadcast_msg)
 
         self.update_start_button(self.state)
         try:
