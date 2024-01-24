@@ -4,9 +4,10 @@ import cv2 as cv
 
 
 class ThreadedCamera:
-    '''
+    """
     Threaded wrapper for OpenCV VideoCapture with built-in camera dewarping.
-    '''
+    """
+
     def __init__(self, src: int = 0, name="ThreadedCamera", mtx=None, dist=None):
         """
         Initialize the ThreadedCamera object.
@@ -20,7 +21,7 @@ class ThreadedCamera:
         self.connected = False
         self.src = src
         self.frame = None
-        self.name = name    
+        self.name = name
         self.lock = Lock()
 
         self.mtx = mtx
@@ -54,9 +55,7 @@ class ThreadedCamera:
                 return
             (self.grabbed, frame) = self.stream.read()
             if self.mtx is not None and self.dist is not None:
-                self.frame = cv.undistort(
-                    frame, self.mtx, self.dist, None, self.mtx
-                )
+                self.frame = cv.undistort(frame, self.mtx, self.dist, None, self.mtx)
             else:
                 self.frame = frame
 

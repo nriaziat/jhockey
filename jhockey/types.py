@@ -41,40 +41,40 @@ class GameState(Enum):
 
 @dataclass
 class RobotState:
-    x: int = 0  # cm
-    y: int = 0  # cm
-    heading: int = 0  # centirad
+    x_cm: int = 0  # cm
+    y_cm: int = 0  # cm
+    heading_crad: int = 0  # centirad
     found: bool = True
 
 
 @dataclass
 class PuckState:
-    x: int  # cm
-    y: int  # cm
+    x_cm: int  # cm
+    y_cm: int  # cm
     found: bool
 
 
 @dataclass(kw_only=True)
 class BroadcasterMessage:
-    _max_size = 114 + 6 + 1
-    time: int  # deciseconds until match end
+    _max_bytes = 114 + 6 + 1
+    time_dsec: int  # deciseconds until match end
     # Passing a Team as a key will return a list of RobotStates in order of robot ID
     robots: dict[int:RobotState]
     enabled: bool
 
     def to_dict(self) -> dict:
         return {
-            "time": self.time,
+            "time": self.time_dsec,
             "robots": self.robots,
             "enabled": self.enabled,
         }
 
     def __str__(self) -> str:
-        message = f">{self.enabled:1}{self.time:04}"  # 6 chars
+        message = f">{self.enabled:1}{self.time_dsec:04}"  # 6 chars
         # Maximum broadcast size is 94 bytes, so we can only send 7 robots at a time
         for tag in self.robots.copy():
-            message += f"{tag:02}{self.robots[tag].x:03}{self.robots[tag].y:03}{self.robots[tag].heading:03}"  # 11 chars
-            if len(message) + 1 >= self._max_size:
+            message += f"{tag:02}{self.robots[tag].x_cm:03}{self.robots[tag].y_cm:03}{self.robots[tag].heading_crad:03}"  # 11 chars
+            if len(message) + 1 >= self._max_bytes:
                 logging.warning(
                     "Broadcast message is too large, truncating robots list"
                 )
@@ -95,3 +95,4 @@ class GUIData:
     aruco_tags: list[AruCoTag]
     cam_connected: bool
     broadcast_msg: BroadcasterMessage
+    homography_found: bool

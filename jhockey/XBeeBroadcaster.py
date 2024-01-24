@@ -3,6 +3,7 @@ from threading import Thread
 from .types import BroadcasterMessage
 from digi.xbee.devices import XBeeDevice
 
+
 class XBeeBroadcaster:
     """
     Class to broadcast location information to each team via XBee protocol.

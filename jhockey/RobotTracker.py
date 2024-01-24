@@ -1,6 +1,6 @@
-from .types import Team, RobotState, AruCoTag
+from .types import RobotState, AruCoTag
 import json
-from typing import Any, Protocol
+from typing import Protocol
 import numpy as np
 from threading import Thread, Lock
 import logging
@@ -109,7 +109,7 @@ class RobotTracker:
 
         if self.H is None:
             return
-    
+
         for robot_id in self.robot_states:
             if robot_id not in [tag.id for tag in aruco_tags]:
                 del self.robot_states[robot_id]
@@ -118,17 +118,17 @@ class RobotTracker:
                 center_mm, heading_rad = get_pose_from_aruco(
                     [tag for tag in aruco_tags if tag.id == robot_id][0]
                 )
-                self.robot_states[robot_id].x = int(center_mm[0] / 10)
-                self.robot_states[robot_id].y = int(center_mm[1] / 10)
-                self.robot_states[robot_id].heading = int(heading_rad * 100)
+                self.robot_states[robot_id].x_cm = int(center_mm[0] / 10)
+                self.robot_states[robot_id].y_cm = int(center_mm[1] / 10)
+                self.robot_states[robot_id].heading_crad = int(heading_rad * 100)
                 aruco_tags = [tag for tag in aruco_tags if tag.id != robot_id]
 
         for new_tag in aruco_tags:
             center_mm, heading_rad = get_pose_from_aruco(new_tag)
             self.robot_states[new_tag.id] = RobotState(
-                x=int(center_mm[0] / 10),
-                y=int(center_mm[1] / 10),
-                heading=int(heading_rad * 100),
+                x_cm=int(center_mm[0] / 10),
+                y_cm=int(center_mm[1] / 10),
+                heading_crad=int(heading_rad * 100),
                 found=True,
             )
 
@@ -136,14 +136,13 @@ class RobotTracker:
         while True:
             if self.stopped:
                 return
-            # aruco_tags = aruco.get()
             if len(self.aruco_tags) == 0:
                 continue
             tag_list = self.filter_tags(self.aruco_tags)
             if len(tag_list) > 0:
                 self.update(tag_list)
             else:
-                self.robot_states = {} 
+                self.robot_states = {}
                 logging.warning("No robot markers found")
 
     def filter_tags(self, tag_list: list[AruCoTag]):

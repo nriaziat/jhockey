@@ -1,4 +1,4 @@
-from .types import GameState, Team, GUIData
+from .types import GameState, Team, GUIData, RobotState, AruCoTag
 from functools import partial
 import time
 import signal
@@ -24,6 +24,8 @@ class GameGUI:
         self.add_score = None
         self.last_update_time = time.time()
         self.camera_connected = False
+        self.homography_found = False
+        self.camera_disconnected = False
 
     def create_ui(self, match_length_sec: int):
         self.match_length_sec = match_length_sec
@@ -92,16 +94,9 @@ class GameGUI:
             self.debug_button: ui.button = ui.button(
                 "Debug Mode", on_click=self.toggle_debug, color="orange"
             )
-            self.camera_connected = (
-                ui.icon("videocam", color="green")
-                .bind_visibility_from(self, "camera_connected")
-                .classes("text-5xl")
-            )
-            self.camera_disconnected = (
-                ui.icon("videocam_off", color="red")
-                .bind_visibility_from(self, "camera_connected", value=False)
-                .classes("text-5xl")
-            )
+            ui.icon("photo_camera", color="green").bind_visibility_from(self, "camera_connected").classes("text-5xl")
+            ui.icon("linked_camera", color="green").bind_visibility_from(self, "homography_found").classes("text-5xl")
+            ui.icon("no_photography", color="red").bind_visibility_from(self, "camera_disconnected").classes("text-5xl")
         app.on_shutdown(self.cleanup)
         signal.signal(signal.SIGINT, handle_sigint)
 
@@ -123,16 +118,18 @@ class GameGUI:
         self.score = data.score
         self.score_display.text = data.score_as_string
         self.seconds_remaining = data.seconds_remaining
-        self.camera_connected = data.cam_connected
-        robot_states = data.robot_states
-        aruco_tags = data.aruco_tags
+        self.camera_connected = data.cam_connected and not data.homography_found
+        self.homography_found = data.homography_found
+        self.camera_disconnected = not data.cam_connected
+        robot_states: dict[int:RobotState] = data.robot_states
+        aruco_tags: list[AruCoTag] = data.aruco_tags
         if robot_states is not None and self.debug:
             robot_rows = [
                 {
                     "robot": id,
-                    "x": robot_states[id].x,
-                    "y": robot_states[id].y,
-                    "theta": robot_states[id].heading,
+                    "x": robot_states[id].x_cm,
+                    "y": robot_states[id].y_cm,
+                    "theta": robot_states[id].heading_crad,
                     "found": "✅" if robot_states[id].found else "❌",
                 }
                 for id in robot_states

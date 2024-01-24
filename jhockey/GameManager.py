@@ -10,7 +10,6 @@ from .types import (
 from typing import Optional, Any, Protocol
 import threading
 from datetime import datetime
-from time import time
 
 
 class PausableTimer(Protocol):
@@ -236,7 +235,7 @@ class GameManager:
         """
         if not self.timer.timestarted:
             return self.match_length_sec
-        remaining = self.match_length_sec - self.timer.get().seconds
+        remaining = self.match_length_sec - (self.timer.get().seconds + self.timer.get().microseconds / 1e6)
         return remaining if remaining > 0 else 0
 
     def pause(self):
@@ -268,22 +267,30 @@ class GameManager:
             if self.seconds_remaining <= 0:
                 self.state = GameState.STOPPED
 
-            time_left_decisecond = (
-                self.timer.get().total_seconds() * 1e1
-                if self.timer.timestarted
-                else (self.match_length_sec * 1e1)
-            )
+            time_left_decisecond = self.seconds_remaining * 10
             msg = BroadcasterMessage(
-                time=int(time_left_decisecond),
+                time_dsec=int(time_left_decisecond),
                 robots=self.robot_states,
                 enabled=self.state == GameState.RUNNING,
             )
             if self.broadcaster is not None:
                 self.broadcaster.broadcast(msg)
             if self.gui is not None:
-                self.update_gui(aruco_tags, msg)
+                gui_data = GUIData(
+                    state=self.state,
+                    seconds_remaining=int(self.seconds_remaining),
+                    puck=self.puck_state,
+                    score=self.score,
+                    score_as_string=self.score_as_string,
+                    robot_states=self.robot_states,
+                    aruco_tags=aruco_tags,
+                    cam_connected=self.aruco_detector.connected,
+                    broadcast_msg=msg,
+                    homography_found=H is not None,
+                )
+                self.update_gui(gui_data)
 
-    def update_gui(self, aruco_tags: list[AruCoTag], broadcast_msg: BroadcasterMessage):
+    def update_gui(self, gui_data: GUIData):
         add_score = self.gui.add_score
         if add_score is not None:
             self.score[add_score] += 1
@@ -295,17 +302,6 @@ class GameManager:
             if toggle_state:
                 self.state = self.state.toggle()
 
-        send_data = GUIData(
-            state=self.state,
-            seconds_remaining=self.seconds_remaining,
-            puck=self.puck_state,
-            score=self.score,
-            score_as_string=self.score_as_string,
-            robot_states=self.robot_states,
-            aruco_tags=aruco_tags,
-            cam_connected=self.aruco_detector.connected,
-            broadcast_msg=broadcast_msg,
-        )
         self.gui.update(
-            send_data
+            gui_data
         )  # used to thread lock this, dont think we need to anymore
