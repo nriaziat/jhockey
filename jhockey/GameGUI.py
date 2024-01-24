@@ -2,7 +2,7 @@ from .types import GameState, Team, GUIData
 from functools import partial
 import time
 import signal
-from nicegui import Client, app, ui
+from nicegui import Client, app, ui, core
 import logging
 
 
@@ -65,6 +65,9 @@ class GameGUI:
                 {"name": "y", "label": "y [px]", "field": "y"}
             ]
             self.tag_debug_tab = ui.table(columns=tag_columns, rows=[], row_key="id")
+            self.broadcast_msg = ui.textarea("")
+
+            # self.loop_rate_indicator = ui.label("")
 
         with ui.row():
             self.start_pause_button: ui.button = ui.button(
@@ -148,6 +151,8 @@ class GameGUI:
                 )
             
             self.tag_debug_tab.rows = tag_rows
+            if data.broadcast_msg is not None:
+                self.broadcast_msg.text = str(data.broadcast_msg)
 
         self.update_start_button(self.state)
         try:
@@ -155,7 +160,7 @@ class GameGUI:
         except ZeroDivisionError:
             update_rate = 0
         self.last_update_time = time.time()
-        self.update_rate.text = f"GUI Update Rate: {update_rate:.1e} Hz"
+        self.update_rate.text = f"Update Rate: {update_rate:.1e} Hz"
 
     def update_score(self, team: Team):
         if self.state == GameState.RUNNING:
@@ -181,7 +186,7 @@ class GameGUI:
 async def disconnect() -> None:
     """Disconnect all clients from current running server."""
     for client_id in Client.instances:
-        await app.sio.disconnect(client_id)
+        await core.sio.disconnect(client_id)
 
 
 def handle_sigint(signum, frame) -> None:
