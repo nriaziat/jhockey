@@ -27,12 +27,10 @@ RUN adduser \
     --shell "/sbin/nologin" \
     --no-create-home \
     --uid "${UID}" \
-    appuser
-
-RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
-    --mount=target=/var/cache/apt,type=cache,sharing=locked \
-    apt-get update \
-    && apt-get install libgl1-mesa-glx ffmpeg libsm6 libxext6 --no-install-recommends -y \
+    appuser \ 
+    && apt-get update \
+    # && apt-get install libgl1-mesa-glx ffmpeg libsm6 libxext6 --no-install-recommends -y \
+    && apt-get install libgl1-mesa-glx libglib2.0-0 --no-install-recommends -y \
     && rm -rf /var/lib/apt/lists/* 
 
 FROM base as pipinstall 
