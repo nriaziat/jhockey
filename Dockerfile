@@ -13,6 +13,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Keeps Python from buffering stdout and stderr to avoid situations where
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND noninteractive
 
 WORKDIR /app
 
@@ -26,13 +27,11 @@ RUN adduser \
     --shell "/sbin/nologin" \
     --no-create-home \
     --uid "${UID}" \
-    appuser
-
-ENV DEBIAN_FRONTEND noninteractive
-RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
-    --mount=target=/var/cache/apt,type=cache,sharing=locked \
-    apt-get update \
-    && apt-get install libgl1-mesa-glx ffmpeg libsm6 libxext6 -y
+    appuser \ 
+    && apt-get update \
+    # && apt-get install libgl1-mesa-glx ffmpeg libsm6 libxext6 --no-install-recommends -y \
+    && apt-get install libgl1-mesa-glx libglib2.0-0 --no-install-recommends -y \
+    && rm -rf /var/lib/apt/lists/* 
 
 FROM base as pipinstall 
 
@@ -46,8 +45,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 FROM pipinstall as final
 
-RUN usermod -a -G video appuser
-RUN usermod -a -G dialout appuser
+RUN usermod -a -G video appuser && usermod -a -G dialout appuser
 
 # Switch to the non-privileged user to run the application.
 USER appuser
