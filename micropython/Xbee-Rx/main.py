@@ -41,39 +41,45 @@ while True:
     data = stdin.buffer.read()
 
     # If data is received, start processing it
-    if last_payload is not None:
-        # Decode the payload
-        receivedMsg = last_payload["payload"].decode("utf-8")
+    if data and data.decode() == "?":
 
-        # If the payload is not empty, parse it
-        if receivedMsg:
-            # Find the start and end of the payload
-            start = receivedMsg.find(">")
-            end = receivedMsg.find(";") + 1
+        if last_payload is not None:
+            # Decode the payload
+            receivedMsg = last_payload["payload"].decode("utf-8")
 
-            # If the start and end are found, parse the payload
-            if start != -1 and end != -1:
-                # Extract the string from the payload
-                string = receivedMsg[start:end]
+            # If the payload is not empty, parse it
+            if receivedMsg:
+                # Find the start and end of the payload
+                start = receivedMsg.find(">")
+                end = receivedMsg.find(";") + 1
 
-                # Parse the string
-                parsedDict = parse_string(string, parsingParameters)
+                # If the start and end are found, parse the payload
+                if start != -1 and end != -1:
+                    # Extract the string from the payload
+                    string = receivedMsg[start:end]
 
-                # Check if the robot ID is a key in the dictionary
-                if ROBOT_ID in parsedDict:
-                    # If the robot ID is a key in the dictionary, set the match time, match bit, and robot coordinates
-                    matchTime = parsedDict["time"]
-                    matchBit = parsedDict["matchbit"]
-                    robotCoords = parsedDict[ROBOT_ID]
+                    # Parse the string
+                    parsedDict = parse_string(string, parsingParameters)
 
-                else:
-                    # If the robot ID is not a key in the dictionary, set everything to 9s
-                    matchTime = "9" * timeLen
-                    matchBit = "9"
-                    robotCoords = "9" * (coordLen * 2) + "9" * angleLen
+                    # Check if the robot ID is a key in the dictionary
+                    if ROBOT_ID in parsedDict:
+                        # If the robot ID is a key in the dictionary, set the match time, match bit, and robot coordinates
+                        matchTime = parsedDict["time"]
+                        matchBit = parsedDict["matchbit"]
+                        robotCoords = parsedDict[ROBOT_ID]
 
-                # Create output string for stdout (Arduino/UART interface)
-                out = matchTime + "," + matchBit + "," + robotCoords
+                    else:
+                        # If the robot ID is not a key in the dictionary, set everything to 9s
+                        matchTime = "9" * timeLen
+                        matchBit = "9"
+                        robotCoords = "9" * (coordLen * 2) + "9" * angleLen
 
-                # Write the output string to stdout
-                stdout.buffer.write(out.encode())
+                    # Create output string for stdout (Arduino/UART interface)
+                    out = matchTime + "," + matchBit + "," + robotCoords + "\n"
+
+                    # Write the output string to stdout
+                    stdout.buffer.write(out.encode())
+
+        else:
+            out = "no active tx found\n"
+            stdout.buffer.write(out.encode())
