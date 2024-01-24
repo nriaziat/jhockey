@@ -5,6 +5,7 @@ import numpy as np
 from .types import AruCoTag
 import logging
 
+
 class Camera(Protocol):
     def read(self) -> np.ndarray:
         """
@@ -20,15 +21,15 @@ class Camera(Protocol):
         ...
 
 
-class ArucoDetector:
+class CameraArucoDetector:
     def __init__(self, name="ArUco Detector"):
-        '''
+        """
         Class to detect ArUco markers.
         Parameters
         ----------
         name : str, optional
             The name of the thread, by default "ArUco Detector"
-        '''
+        """
         self.arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
         self.arucoParams = cv2.aruco.DetectorParameters()
         self.detector: cv2.aruco.ArucoDetector = cv2.aruco.ArucoDetector(
@@ -62,7 +63,11 @@ class ArucoDetector:
             return []
         tag_list = []
         for corner, id in zip(self.corners, self.ids):
-            tag_list.append(AruCoTag(id=id[0], corners=corner))
+            center = np.mean(corner, axis=0)
+            w, h = np.linalg.norm(corner[0] - corner[1]), np.linalg.norm(
+                corner[1] - corner[2]
+            )
+            tag_list.append(AruCoTag(id=id[0], center=center, w=w, h=h))
         return tag_list
 
     def detect(self, frame):

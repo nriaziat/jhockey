@@ -2,12 +2,17 @@ from enum import Enum, auto
 from dataclasses import dataclass
 from typing import Optional
 
+@dataclass
+class Point:
+    x: float
+    y: float
 
 @dataclass
 class AruCoTag:
     id: int
-    corners: list[float]
-
+    center: Point
+    w: float
+    h: float
 
 class Team(Enum):
     RED = auto()
@@ -26,16 +31,16 @@ class GameState(Enum):
 
 @dataclass
 class RobotState:
-    x: int = 0  # mm
-    y: int = 0  # mm
-    heading: int = 0  # millirad
+    x: int = 0  # cm
+    y: int = 0  # cm
+    heading: int = 0  # centirad
     found: bool = True
 
 
 @dataclass
 class PuckState:
-    x: int  # mm
-    y: int  # mm
+    x: int  # cm
+    y: int  # cm
     found: bool
 
 
@@ -46,36 +51,33 @@ class GUIData:
     puck: Optional[PuckState]
     score: dict[Team:int]
     score_as_string: str
-    robot_states: dict[Team : list[RobotState]]
+    robot_states: dict[Team : list[RobotState]] | dict[int:RobotState]
     aruco_tags: list[AruCoTag]
     cam_connected: bool
 
 
 @dataclass(kw_only=True)
 class BroadcasterMessage:
-    time: int  # usec since match start
-    puck: Optional[PuckState]  # optional, if implemented
+    _max_size = 7
+    time: int  # deciseconds until match end
     # Passing a Team as a key will return a list of RobotStates in order of robot ID
-    robots: dict[Team : list[RobotState]]
+    robots: dict[Team : list[RobotState]] | dict[int:RobotState]
     enabled: bool
 
     def to_dict(self) -> dict:
-        if self.puck is not None:
-            return {
-                "time": self.time,
-                "puck": self.puck,
-                "robots": self.robots,
-                "enabled": self.enabled,
-            }
-        else:
-            return {
-                "time": self.time,
-                "robots": self.robots,
-                "enabled": self.enabled,
-            }
+        return {
+            "time": self.time,
+            "robots": self.robots,
+            "enabled": self.enabled,
+        }
 
     def __str__(self) -> str:
-        if self.puck is not None:
-            return f"{self.time},{self.puck.x},{self.puck.y},{self.robots[Team.RED][0].x},{self.robots[Team.RED][0].y},{self.robots[Team.BLUE][0].x},{self.robots[Team.BLUE][0].y},{self.enabled}"
-        else:
-            return f"{self.time},{self.robots[Team.RED][0].x},{self.robots[Team.RED][0].y},{self.robots[Team.BLUE][0].x},{self.robots[Team.BLUE][0].y},{self.enabled}"
+        message = f">{self.time:04d}{self.enabled:1d}"  # 6 chars
+        # Maximum broadcast size is 94 bytes, so we can only send 7 robots at a time
+        for tag in self.robots:
+            if len(message) + 1 >= self._max_size:
+                break
+            message += f"{tag:02d}{self.robots[tag].x:03d}{self.robots[tag].y:03d}{self.robots[tag].heading:03d}" # 11 chars
+        # add end of message character
+        message += "\n"
+        return message

@@ -1,11 +1,12 @@
-from threading import Thread
-from .types import AruCoTag
+from threading import Thread, Lock
+from .types import AruCoTag, Point
 import serial
 import logging
 
+
 class JeVoisArucoDetector:
-    def __init__(self, name="ArUco Detector", port="/dev/ttyACM0", baudrate=115200):
-        '''
+    def __init__(self, name="JeVois ArUco Detector", port="/dev/ttyACM0", baudrate=115200):
+        """
         Parameters
         ----------
         name : str, optional
@@ -14,19 +15,21 @@ class JeVoisArucoDetector:
             The serial port to connect to, by default "/dev/ttyACM0".
         baudrate : int, optional
             The baudrate of the serial connection, by default 115200
-        '''
+        """
         self.port = port
         self.baudrate = baudrate
         self.name = name
-        self.corners = [None] * 8
+        self.tags: list[AruCoTag] = []
         self.stopped = False
         self.connected = False
-        self.try_connect()     
+        self.try_connect()
+        self.aruco_lock = Lock()
+        self.new_data = False
 
     def start(self):
-        '''
+        """
         Start the a new thread to read and parse ArUco data from the JeVois camera.
-        '''
+        """
         t = Thread(target=self.run, name=self.name)
         t.daemon = True
         t.start()
@@ -37,54 +40,60 @@ class JeVoisArucoDetector:
             return []
         # with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
         #     self.detect(ser)
-        found_corners = [corner for corner in self.corners if corner is not None]
-        if len(found_corners) == 0:
+        if len(self.tags) == 0:
             logging.warning("No ArUco tags found")
             return []
-        tag_list = []
-        for id, corner in enumerate(found_corners):
-            tag_list.append(AruCoTag(id=id, corners=corner))
-        return tag_list
+        tags = self.tags
+        return tags
 
-    def detect(self, ser):
-        try:
-            line = ser.readline().decode('utf-8').rstrip()
-        except serial.SerialException:
-            self.connected = False
-            logging.error("JeVois disconnected!")
-            self.stop()
-            return
-        logging.info("Line received from Jevois: %s", line)
-        tok = line.split()
-        if len(tok) < 1:
-            logging.warning("Invalid line from JeVois: %s", line)
-            return
-        if tok[0] != "N2":
-            logging.warning("JeVois may be in terse mode!")
-            logging.warning("Invalid line from JeVois: %s", line)
-            return
-        if len(tok) != 6:
-            logging.warning("Invalid line from JeVois: %s", line)
-            return
-        _, id, x, y, w, h = tok
-        x = int(x)
-        y = int(y)
-        w = int(w)
-        h = int(h)
-        id = int(id[1:])
-        # coordinates are returned in "standard" coordinates, where center is at (0, 0), right edge is at 1000 and bottom edge is at 750
-        try: 
-            self.corners[id] = [x - w/2, y - h/2, x + w/2, y + h/2]
-        except IndexError:
-            logging.error(f"ArUco tag detected outside of expected range: {id}")
-
-
-    def run(self):       
+    def detect(self):
         with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
-            while True:
-                if self.stopped:
+            try:
+                line = ""
+                while line != "MARK START":
+                    line = ser.readline().decode("utf-8").rstrip()
+            except serial.SerialException:
+                self.connected = False
+                logging.error("JeVois disconnected!")
+                self.stop()
+                return
+            self.tags = []
+            while line != "MARK STOP":
+                line = ser.readline().decode("utf-8").rstrip()
+                if line == "MARK STOP":
+                    break
+                logging.info("Line received from Jevois: %s", line)
+                tok = line.split()
+                if len(tok) < 1:
+                    logging.warning("Invalid line from JeVois: %s", line)
                     return
-                self.detect(ser)
+                if tok[0] != "N2":
+                    logging.warning("JeVois may be in terse mode!")
+                    logging.warning("Invalid line from JeVois: %s", line)
+                    return
+                if len(tok) != 6:
+                    logging.warning("Invalid line from JeVois: %s", line)
+                    return
+                _, id, x, y, w, h = tok
+                x = int(x)
+                y = int(y)
+                w = int(w)
+                h = int(h)
+                id = int(id[1:])
+                # coordinates are returned in "standard" coordinates, where center is at (0, 0), right edge is at 1000 and bottom edge is at 750
+                if id in [tag.id for tag in self.tags]:
+                    # update existing tag
+                    self.tags = [tag for tag in self.tags if tag.id != id]
+                    self.tags.append(AruCoTag(id, center=Point(x, y), w=w, h=h))
+                else:
+                    # add new tag
+                    self.tags.append(AruCoTag(id, center=Point(x, y), w=w, h=h))
+
+    def run(self):
+        while True:
+            if self.stopped:
+                return
+            self.detect()
 
     def try_connect(self):
         while self.connected == False:
@@ -94,7 +103,6 @@ class JeVoisArucoDetector:
                     logging.info("Connected to JeVois camera")
             except:
                 logging.warning("Could not connect to JeVois camera. Retrying...")
-
 
     def stop(self):
         self.stopped = True

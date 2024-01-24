@@ -4,12 +4,14 @@ import cv2 as cv
 from .types import AruCoTag
 import logging
 
+
 class FieldHomography:
-    '''
+    """
     FieldHomography class to convert between the camera frame and the field frame using ArUco markers.
-    '''
+    """
+
     def __init__(self, param_file: str = "config.json"):
-        '''
+        """
         Parameters
         ----------
         param_file : str, optional
@@ -40,32 +42,39 @@ class FieldHomography:
                 }
             ],
             } ...
-        '''
+        """
         self.field_params = json.load(open(param_file, "r"))
-        self.field_corners = {
-            tag["id"]: (tag["x"], tag["y"]) for tag in self.field_params["field_tags"]
+        self.tag_positions = {
+            int(tag["id"]): (float(tag["x"]), float(tag["y"]))
+            for tag in self.field_params["field_tags"]
         }
         self.H = None
 
-    def find_homography(self, field_tags: list[AruCoTag]) -> np.ndarray:
+    def find_homography(self, field_tags: list[AruCoTag]) -> None:
         try:
-            detected_tags = np.array([(elem.corners[0][0], elem.corners[0][1]) for elem in field_tags])
-        except KeyError:
-            logging.warn_("KeyError in find_homography")
+            detected_tags = [tag for tag in field_tags if tag.id in self.tag_positions]
+        except KeyError as e:
+            logging.warning("KeyError in find_homography")
             return None
         if len(detected_tags) < 4:
-            logging.warning(f"Not enough tags for homography detected: {len(detected_tags)} tags received, expected 4.")
+            # logging.warning(f"Not enough tags for homography detected: {len(detected_tags)} tags received, expected 4.")
             return None
-        _, self.H = cv.findHomography(detected_tags,
+        tag_px = np.array(
+            [[tag.center.x, tag.center.y] for tag in detected_tags], dtype=np.float32
+        ).reshape(-1, 1, 2)
+        self.H, _ = cv.findHomography(
+            tag_px,
             np.array(
                 [
-                    (self.field_corners[elem.id][0], self.field_corners[elem.id][1])
-                    for elem in field_tags
-                ]
-            ),
+                    (self.tag_positions[tag.id][0], self.tag_positions[tag.id][1])
+                    for tag in detected_tags
+                ],
+                dtype=np.float32,
+            ).reshape(-1, 1, 2),
+            cv.RANSAC,
+            5.0,
         )
         self.H_inv = np.linalg.inv(self.H)
-        return self.H
 
     def convert_cam2world(self, x: int, y: int) -> np.ndarray:
         """
@@ -75,7 +84,9 @@ class FieldHomography:
         """
         if self.H is None:
             raise Exception("Homography not initialized")
-        return cv.perspectiveTransform(np.array([x, y]), self.H)
+        return cv.perspectiveTransform(
+            np.array([x, y], dtype=np.float32).reshape(-1, 1, 2), self.H
+        )
 
     def convert_world2cam(self, x: float, y: float) -> np.ndarray:
         """
