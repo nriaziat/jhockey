@@ -22,6 +22,10 @@ def parse_string(data, parsingParameters):
     # Get the robot data
     i = startLen + timeLen + 1
 
+    # Check if there is no robot data
+    if data[i] == ";":
+        return parsedData
+
     while i < len(data):
         toCheck = data[i:]
 
