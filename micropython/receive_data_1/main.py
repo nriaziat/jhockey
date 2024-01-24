@@ -61,13 +61,13 @@ while True:
 
                 # Check if the robot ID is a key in the dictionary
                 if ROBOT_ID in parsedDict:
-                    # If the robot ID is a key in the dictionary, set the match time, match bit, and robot coordinates to the values in the dictionary
+                    # If the robot ID is a key in the dictionary, set the match time, match bit, and robot coordinates
                     matchTime = parsedDict["time"]
                     matchBit = parsedDict["matchbit"]
                     robotCoords = parsedDict[ROBOT_ID]
 
                 else:
-                    # If the robot ID is not a key in the dictionary, set the match time, match bit, and robot coordinates to 9s
+                    # If the robot ID is not a key in the dictionary, set everything to 9s
                     matchTime = "9" * timeLen
                     matchBit = "9"
                     robotCoords = "9" * (coordLen * 2) + "9" * angleLen
