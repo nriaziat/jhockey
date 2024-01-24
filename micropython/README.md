@@ -79,6 +79,6 @@ Author: Anway Pimpalkar | Last Updated: January 23rd 2024
 
 ### Deploying MicroPython Script
 
-1. Open the `XBee-Rx` PyCharm project.
+1. Open the `xbee_rx` PyCharm project.
 2. Replace the `ROBOT_ID` variable in the MicroPython script with the unique identifier assigned to the XBee module.
 3. Select the appropriate port connected the device is connected to, and upload.
