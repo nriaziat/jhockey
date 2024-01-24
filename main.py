@@ -11,6 +11,7 @@ parser.add_argument("--config", type=str, default="config.json", help="ArUco con
 parser.add_argument("--debug", action="store_true", help="Enable debug logging.")
 parser.add_argument("--debug-info", action="store_true", help="Enable debug logging at info level.")
 parser.add_argument("--radio_port", type=str, default=None,  help="Radio port (i.e., if using Zigbee).")
+parser.add_argument("--threaded", action="store_true", help="Enable threaded camera.")
 args = parser.parse_args()
 
 if args.debug_info:
@@ -23,13 +24,13 @@ else:
 gui = GameGUI()
 if args.camera is None:
     from jhockey import JeVoisArucoDetector
-    aruco = JeVoisArucoDetector()
+    aruco = JeVoisArucoDetector() if not args.threaded else JeVoisArucoDetector().start()
 else:
     from jhockey import ThreadedCamera, CameraArucoDetector
     cam = ThreadedCamera(src=args.camera).start()
     aruco = CameraArucoDetector().start(cam)
 field_homography = FieldHomography()
-rob_track = RobotTracker(aruco_config=args.config)
+rob_track = RobotTracker(aruco_config=args.config) if not args.threaded else RobotTracker(aruco_config=args.config).start()
 if args.puck_tracking:
     from jhockey import PuckTracker
     puck_track = PuckTracker(field_homography).start(aruco)
@@ -39,7 +40,7 @@ if args.radio_port is not None:
     broadcaster = XBeeBroadcaster(port=args.radio_port).start()
 else:
     broadcaster = None
-timer = PausableTimer()
+timer = PausableTimer()    
 gm = GameManager(
     match_length_sec=args.match_length,
     broadcaster=broadcaster,

@@ -58,7 +58,7 @@ class ThreadedNode(Protocol):
     def set(self, data: Any) -> None:
         ...
 
-class ArucoDetector(Protocol):
+class ArucoDetector(ThreadedNode):
     def get(self) -> list[AruCoTag]:
         ...
 
@@ -66,10 +66,14 @@ class ArucoDetector(Protocol):
     def connected(self) -> bool:
         ...
 
+    @property
+    def threading(self) -> bool:
+        ...
+
     def detect(self) -> None:
         ...
 
-class Broadcaster(Protocol):
+class Broadcaster(ThreadedNode):
     def set_message(self, message: BroadcasterMessage) -> None:
         """
         Sets the message to be broadcast.
@@ -245,7 +249,8 @@ class GameManager:
         """
         while True:
             t0 = time()
-            self.aruco_detector.detect()
+            if not self.aruco_detector.threading:
+                self.aruco_detector.detect()
             aruco_tags = self.aruco_detector.get()
             self.field_homography.find_homography(aruco_tags)
             H = self.field_homography.H

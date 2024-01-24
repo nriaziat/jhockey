@@ -25,6 +25,7 @@ class JeVoisArucoDetector:
         self.try_connect()
         self.aruco_lock = Lock()
         self.new_data = False
+        self.threading = False
 
     def start(self):
         """
@@ -33,6 +34,7 @@ class JeVoisArucoDetector:
         t = Thread(target=self.run, name=self.name)
         t.daemon = True
         t.start()
+        self.threading = True
         return self
 
     def get(self) -> list[AruCoTag]:

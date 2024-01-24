@@ -66,7 +66,7 @@ class GameGUI:
             ]
             self.tag_debug_tab = ui.table(columns=tag_columns, rows=[], row_key="id")
 
-            self.loop_rate_indicator = ui.label("")
+            # self.loop_rate_indicator = ui.label("")
 
         with ui.row():
             self.start_pause_button: ui.button = ui.button(
@@ -150,7 +150,7 @@ class GameGUI:
                 )
             
             self.tag_debug_tab.rows = tag_rows
-            self.loop_rate_indicator.text = f"Loop Rate: {data.loop_rate:.1e} Hz"
+            # self.loop_rate_indicator.text = f"Loop Rate: {data.loop_rate:.1e} Hz"
 
         self.update_start_button(self.state)
         try:
@@ -158,7 +158,7 @@ class GameGUI:
         except ZeroDivisionError:
             update_rate = 0
         self.last_update_time = time.time()
-        self.update_rate.text = f"GUI Update Rate: {update_rate:.1e} Hz"
+        self.update_rate.text = f"Update Rate: {update_rate:.1e} Hz"
 
     def update_score(self, team: Team):
         if self.state == GameState.RUNNING:

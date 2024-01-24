@@ -62,6 +62,7 @@ class XBeeBroadcaster:
         self.stopped = False
         self.message = None
         self.game_state = GameState.STOPPED
+        self.threading = False
 
     def start(self) -> XBeeBroadcaster:
         """
@@ -70,6 +71,7 @@ class XBeeBroadcaster:
         t = Thread(target=self.run, name="XBee Broadcaster")
         t.daemon = True
         t.start()
+        self.threading = True
         return self
 
     def run(self):

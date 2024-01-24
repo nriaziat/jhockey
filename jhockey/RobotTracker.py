@@ -60,6 +60,7 @@ class RobotTracker:
         self.stopped = False
         self.aruco_tags = []
         self.robot_lock = Lock()
+        self.threading = False
 
     def start(self):
         """
@@ -72,6 +73,7 @@ class RobotTracker:
         t = Thread(target=self.run, name="Robot Tracker", args=())
         t.daemon = True
         t.start()
+        self.threading = True
         return self
 
     def convert_cam2world(self, x: int, y: int) -> np.ndarray:
@@ -133,17 +135,20 @@ class RobotTracker:
             # aruco_tags = aruco.get()
             if len(self.aruco_tags) == 0:
                 continue
-            tag_list = [tag for tag in self.aruco_tags if tag.id not in self.field_tags]
+            tag_list = self.filter_tags(self.aruco_tags)
             if len(tag_list) > 0:
                 self.update(tag_list)
             else:
                 logging.warning("No robot markers found")
 
+    def filter_tags(self, tag_list: list[AruCoTag]):
+        return [tag for tag in tag_list if tag.id not in self.field_tags]
+
     def set(self, tags: list[AruCoTag], H):
         self.H = H
         self.aruco_tags = tags
-        tag_list = [tag for tag in self.aruco_tags if tag.id not in self.field_tags]
-        if len(tag_list) > 0:
+        tag_list = self.filter_tags(self.aruco_tags)
+        if len(tag_list) > 0 and not self.threading:
             self.update(tag_list)
 
     def get(self) -> dict[Team : list[RobotState]] | dict[int:RobotState]:
