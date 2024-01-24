@@ -27,10 +27,11 @@ RUN adduser \
     --shell "/sbin/nologin" \
     --no-create-home \
     --uid "${UID}" \
-    appuser \
-    && --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+    appuser
+
+RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
     --mount=target=/var/cache/apt,type=cache,sharing=locked \
-    apt-get update \
+    apt-get update 
     && apt-get install libgl1-mesa-glx ffmpeg libsm6 libxext6 –no-install-recommends -y \
     && rm -rf /var/lib/apt/lists/* 
 
