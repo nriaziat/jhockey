@@ -22,24 +22,23 @@ while True:
         receivedMsg = last_payload["payload"].decode("utf-8")
 
         if receivedMsg:
-
             start = receivedMsg.find(">")
-            end = receivedMsg.find(">", start + 1)
+            end = receivedMsg.find(";")
 
             if end != -1:
                 string = receivedMsg[start:end]
 
+                parsed_string = parse_string(string)
+
+                out = (
+                    parsed_string["time"]
+                    + ","
+                    + parsed_string["matchbit"]
+                    + ","
+                    + parsed_string[ROBOT_ID]
+                )
+
+                stdout.buffer.write(out.encode())
+
             else:
-                break
-
-            parsed_string = parse_string(string)
-
-            out = (
-                parsed_string["time"]
-                + ","
-                + parsed_string["match"]
-                + ","
-                + parsed_string[ROBOT_ID]
-            )
-
-            stdout.buffer.write(out.encode())
+                stdout.buffer.write("No end found".encode())
