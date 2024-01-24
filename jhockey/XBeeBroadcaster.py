@@ -57,7 +57,7 @@ class XBeeBroadcaster:
     """
 
     def __init__(self, port="/dev/ttyUSB0"):
-        self.xbee = XBeeDevice(port, 9600)
+        self.xbee = XBeeDevice(port, 115200)
         self.xbee.open()
         self.stopped = False
         self.message = None
