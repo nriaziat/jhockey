@@ -8,6 +8,7 @@ device_port="0"
 config_file="none"
 debug="low"
 radio_port="/dev/ttyUSB0"
+threaded="false"
 while test $# -gt 0
 do
     case "$1" in
@@ -25,6 +26,10 @@ do
             ;;
         --radio_port*) 
             radio_port="$2"
+            ;;
+        --threaded) 
+            echo "Threaded mode enabled"
+            threaded="true"
             ;;
     esac
     shift
@@ -68,6 +73,9 @@ if [[ $debug == "mid" ]]; then
     cmd="$cmd --debug"
 elif [[ $debug == "high" ]]; then
     cmd="$cmd --debug-info"
+fi
+if [[ $threaded == "true" ]]; then
+    cmd="$cmd --threaded"
 fi
 echo "Docker Command: $cmd"
 $cmd

@@ -1,4 +1,3 @@
-from typing_extensions import Protocol
 from .types import (
     Team,
     GUIData,
@@ -8,10 +7,10 @@ from .types import (
     GameState,
     BroadcasterMessage,
 )
-from typing import Optional
+from typing import Optional, Any, Protocol
 import threading
-from typing import Any
 from datetime import datetime
+from time import time
 
 
 class PausableTimer(Protocol):
@@ -60,7 +59,8 @@ class ThreadedNode(Protocol):
     def set(self, data: Any) -> None:
         ...
 
-class ArucoDetector(Protocol):
+
+class ArucoDetector(ThreadedNode):
     def get(self) -> list[AruCoTag]:
         ...
 
@@ -68,7 +68,15 @@ class ArucoDetector(Protocol):
     def connected(self) -> bool:
         ...
 
-class Broadcaster(Protocol):
+    @property
+    def threading(self) -> bool:
+        ...
+
+    def detect(self) -> None:
+        ...
+
+
+class Broadcaster(ThreadedNode):
     def set_message(self, message: BroadcasterMessage) -> None:
         """
         Sets the message to be broadcast.
@@ -83,6 +91,13 @@ class FieldHomography(Protocol):
         """
         ...
 
+    @property
+    def H(self):
+        """
+        Returns the homography matrix.
+        """
+        ...
+
 
 class GUI(Protocol):
     def create_ui(self, match_length_sec: int) -> None:
@@ -91,6 +106,27 @@ class GUI(Protocol):
     def update(self, data: dict) -> None:
         """
         Updates the GUI.
+        """
+        ...
+
+    @property
+    def add_score(self) -> Team | None:
+        """
+        Returns the team that scored.
+        """
+        ...
+
+    @property
+    def reset_state(self) -> bool:
+        """
+        Returns whether the game should be reset.
+        """
+        ...
+
+    @property
+    def toggle_state(self) -> bool:
+        """
+        Returns whether the game should be toggled.
         """
         ...
 
@@ -142,11 +178,12 @@ class GameManager:
         self.puck_state: Optional[PuckState] = None
         self.field_homography: Optional[FieldHomography] = field_homography
         self.robot_tracker: Optional[ThreadedNode] = robot_tracker
-        self.robot_states: Optional[dict[Team : list[RobotState]] | dict[int, RobotState]] = None
-        self.aruco_detector: Optional[ThreadedNode] = aruco_detector
+        self.robot_states: Optional[dict[int, RobotState]] = None
+        self.aruco_detector: Optional[ArucoDetector] = aruco_detector
         self.gui: Optional[GUI] = gui
         self.gui.create_ui(self.match_length_sec)
         self._state: GameState = GameState.STOPPED
+        self.loop_rate = 0
         self.lock = threading.Lock()
 
     def start(self):
@@ -220,7 +257,8 @@ class GameManager:
         Updates the game state.
         """
         while True:
-            self.aruco_detector.detect()
+            if not self.aruco_detector.threading:
+                self.aruco_detector.detect()
             aruco_tags = self.aruco_detector.get()
             self.field_homography.find_homography(aruco_tags)
             H = self.field_homography.H
@@ -233,21 +271,23 @@ class GameManager:
             if self.seconds_remaining <= 0:
                 self.state = GameState.STOPPED
 
+            msg = None
             if self.broadcaster is not None:
-                time_left_decisecond = int(self.timer.get().total_seconds * 1e1) if self.timer.timestarted else self.match_length_sec * 1e1
-                self.broadcaster.set_message(
-                    BroadcasterMessage(
-                        time=time_left_decisecond,
-                        robots=self.robot_states,
-                        puck=self.puck_state,
-                        enabled=self.state == GameState.RUNNING,
-                    )
+                time_left_decisecond = (
+                    self.timer.get().total_seconds * 1e1
+                    if self.timer.timestarted
+                    else (self.match_length_sec * 1e1)
                 )
-
+                msg = BroadcasterMessage(
+                    time=int(time_left_decisecond),
+                    robots=self.robot_states,
+                    enabled=self.state == GameState.RUNNING,
+                )
+                self.broadcaster.set_message(msg)
             if self.gui is not None:
-                self.update_gui(aruco_tags)
-        
-    def update_gui(self, aruco_tags: list[AruCoTag]):
+                self.update_gui(aruco_tags, msg)
+
+    def update_gui(self, aruco_tags: list[AruCoTag], broadcast_msg: BroadcasterMessage):
         add_score = self.gui.add_score
         if add_score is not None:
             self.score[add_score] += 1
@@ -270,5 +310,8 @@ class GameManager:
             robot_states=self.robot_states,
             aruco_tags=aruco_tags,
             cam_connected=self.aruco_detector.connected,
+            broadcast_msg=broadcast_msg,
         )
-        self.gui.update(send_data)  # used to thread lock this, dont think we need to anymore
+        self.gui.update(
+            send_data
+        )  # used to thread lock this, dont think we need to anymore

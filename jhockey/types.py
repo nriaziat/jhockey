@@ -4,10 +4,12 @@ from typing import Optional
 from string import ascii_uppercase
 import logging
 
+
 @dataclass
 class Point:
     x: float
     y: float
+
 
 @dataclass
 class AruCoTag:
@@ -15,6 +17,7 @@ class AruCoTag:
     center: Point
     w: float
     h: float
+
 
 class Team(Enum):
     RED = auto()
@@ -46,24 +49,12 @@ class PuckState:
     found: bool
 
 
-@dataclass
-class GUIData:
-    state: GameState
-    seconds_remaining: float
-    puck: Optional[PuckState]
-    score: dict[Team:int]
-    score_as_string: str
-    robot_states: dict[Team : list[RobotState]] | dict[int:RobotState]
-    aruco_tags: list[AruCoTag]
-    cam_connected: bool
-
-
 @dataclass(kw_only=True)
 class BroadcasterMessage:
     _max_size = 7
     time: int  # deciseconds until match end
     # Passing a Team as a key will return a list of RobotStates in order of robot ID
-    robots: dict[Team : list[RobotState]] | dict[int:RobotState]
+    robots: dict[int:RobotState]
     enabled: bool
 
     def to_dict(self) -> dict:
@@ -87,3 +78,16 @@ class BroadcasterMessage:
         cheksum = sum([ord(c) for c in message]) % 64
         message += f"{cheksum:02};"
         return message
+
+
+@dataclass
+class GUIData:
+    state: GameState
+    seconds_remaining: float
+    puck: Optional[PuckState]
+    score: dict[Team:int]
+    score_as_string: str
+    robot_states: dict[int:RobotState]
+    aruco_tags: list[AruCoTag]
+    cam_connected: bool
+    broadcast_msg: BroadcasterMessage
