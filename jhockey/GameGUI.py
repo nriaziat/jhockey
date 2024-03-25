@@ -44,7 +44,6 @@ class GameGUI:
                 },
                 {"name": "x", "label": "x [mm]", "field": "x"},
                 {"name": "y", "label": "y [mm]", "field": "y"},
-                {"name": "theta", "label": "Heading [millirad]", "field": "theta"},
                 {"name": "found", "label": "Found", "field": "found"},
             ]
             self.robot_debug_tab = ui.table(
@@ -129,7 +128,6 @@ class GameGUI:
                     "robot": id,
                     "x": robot_states[id].x,
                     "y": robot_states[id].y,
-                    "theta": robot_states[id].heading,
                     "found": "✅" if robot_states[id].found else "❌",
                 }
                 for id in robot_states

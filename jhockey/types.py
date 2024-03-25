@@ -1,6 +1,8 @@
 from enum import Enum, auto
 from dataclasses import dataclass
 from typing import Optional
+from string import ascii_uppercase
+import logging
 
 @dataclass
 class Point:
@@ -72,12 +74,16 @@ class BroadcasterMessage:
         }
 
     def __str__(self) -> str:
-        message = f">{self.time:04d}{self.enabled:1d}"  # 6 chars
-        # Maximum broadcast size is 94 bytes, so we can only send 7 robots at a time
-        for tag in self.robots:
-            if len(message) + 1 >= self._max_size:
+        message = f">{self.enabled:1}{self.time_dsec:04}"  # 6 chars
+        # Maximum broadcast size is 94 bytes, so we can only send 11 robots at a time
+        for tag in self.robots.copy():
+            message += f"{ascii_uppercase[tag]}{self.robots[tag].x_cm:03}{self.robots[tag].y_cm:03}"  # 7 chars
+            if len(message) + 1 >= self._max_bytes:
+                logging.warning(
+                    "Broadcast message is too large, truncating robots list"
+                )
                 break
-            message += f"{tag:02d}{self.robots[tag].x:03d}{self.robots[tag].y:03d}{self.robots[tag].heading:03d}" # 11 chars
         # add end of message character
-        message += "\n"
+        cheksum = sum([ord(c) for c in message]) % 64
+        message += f"{cheksum:02};"
         return message
