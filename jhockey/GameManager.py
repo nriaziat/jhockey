@@ -279,7 +279,7 @@ class GameManager:
                     else (self.match_length_sec * 1e1)
                 )
                 msg = BroadcasterMessage(
-                    time=int(time_left_decisecond),
+                    time_dsec=int(time_left_decisecond),
                     robots=self.robot_states,
                     enabled=self.state == GameState.RUNNING,
                 )
