@@ -236,7 +236,7 @@ class GameManager:
         """
         if not self.timer.timestarted:
             return self.match_length_sec
-        remaining = self.match_length_sec - self.timer.get().seconds
+        remaining = self.match_length_sec - self.timer.get().total_seconds()
         return remaining if remaining > 0 else 0
 
     def pause(self):
