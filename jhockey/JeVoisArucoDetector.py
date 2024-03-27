@@ -47,11 +47,6 @@ class JeVoisArucoDetector:
         return self.tags
 
     def detect(self, ser=None):
-        if ser is None:
-            with self.ser_port as ser:
-                read_serial(ser)
-        else:
-            read_serial(ser)
         
         def read_serial(ser):
             try:
@@ -97,6 +92,12 @@ class JeVoisArucoDetector:
                     # add new tag
                     tags.append(AruCoTag(id, center=Point(x, y), w=w, h=h))
 
+        if ser is None:
+            with self.ser_port as ser:
+                read_serial(ser)
+        else:
+            read_serial(ser)
+            
     def run(self):
         while True:
             if self.stopped:
