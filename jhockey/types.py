@@ -51,25 +51,24 @@ class PuckState:
 
 @dataclass(kw_only=True)
 class BroadcasterMessage:
-    _max_size = 7
-    time: int  # deciseconds until match end
+    time_dsec: int  # deciseconds until match end
     # Passing a Team as a key will return a list of RobotStates in order of robot ID
     robots: dict[int:RobotState]
     enabled: bool
+    _max_bytes = 114
 
     def to_dict(self) -> dict:
         return {
-            "time": self.time,
+            "time": self.time_dsec,
             "robots": self.robots,
             "enabled": self.enabled,
         }
 
     def __str__(self) -> str:
-        message = f">{self.enabled:1}{self.time_dsec:04}"  # 6 chars
-        # Maximum broadcast size is 94 bytes, so we can only send 11 robots at a time
+        message = f">{self.enabled:1}{self.time_dsec:04}" 
         for tag in self.robots.copy():
-            message += f"{ascii_uppercase[tag]}{self.robots[tag].x_cm:03}{self.robots[tag].y_cm:03}"  # 7 chars
-            if len(message) + 1 >= self._max_bytes:
+            message += f"{ascii_uppercase[tag]}{self.robots[tag].x_cm:03}{self.robots[tag].y_cm:03}"  
+            if len(message) > self._max_bytes:
                 logging.warning(
                     "Broadcast message is too large, truncating robots list"
                 )
