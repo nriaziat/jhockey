@@ -66,15 +66,14 @@ class BroadcasterMessage:
 
     def __str__(self) -> str:
         message = f">{self.enabled:1}{self.time_dsec:04}" 
-        for tag in self.robots.copy():
-            message += f"{ascii_uppercase[tag]}{self.robots[tag].x_cm:03}{self.robots[tag].y_cm:03}"  
-            if len(message) > self._max_bytes:
-                logging.warning(
-                    "Broadcast message is too large, truncating robots list"
-                )
+        for i, tag in enumerate(self.robots.copy()):
+            if i > 15:
+                logging.warning("Broadcast message is too large, truncating robots list")
                 break
-        # add end of message character
-        cheksum = sum([ord(c) for c in message]) % 64
+            message += f"{ascii_uppercase[tag-4]}{self.robots[tag].x_cm:03}{self.robots[tag].y_cm:03}"  
+        
+        message += f'B{0:03}{0:03}'
+        cheksum = sum([ord(c) for c in message] + [ord(';')]) % 64
         message += f"{cheksum:02};"
         return message
 

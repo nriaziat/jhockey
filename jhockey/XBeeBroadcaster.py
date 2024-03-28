@@ -3,6 +3,7 @@ from threading import Thread
 from typing import Protocol
 from .types import PuckState, RobotState, Team, BroadcasterMessage, GameState
 from digi.xbee.devices import XBeeDevice
+import serial
 
 class ThreadedNode(Protocol):
     def get(self) -> PuckState | dict[Team, list[RobotState]] | dict[int, RobotState]:
@@ -58,6 +59,7 @@ class XBeeBroadcaster:
 
     def __init__(self, port="/dev/ttyUSB0"):
         self.xbee = XBeeDevice(port, 115200)
+        # self.xbee = serial.Serial(port, 115200)
         self.xbee.open()
         self.stopped = False
         self.message = None
@@ -91,7 +93,8 @@ class XBeeBroadcaster:
         @param data: BroadcasterMessage to broadcast
         """
         self.xbee.send_data_broadcast(str(msg))
-
+        # self.xbee.write(str(msg).encode())
+        
     def get(self) -> BroadcasterMessage:
         """
         Returns the message to be broadcasted.

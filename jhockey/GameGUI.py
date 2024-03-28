@@ -24,6 +24,10 @@ class GameGUI:
         self.add_score = None
         self.last_update_time = time.time()
         self.camera_connected = False
+        
+    @property
+    def int_seconds_remaining(self) -> int:
+        return int(self.seconds_remaining)
 
     def create_ui(self, match_length_sec: int):
         self.match_length_sec = match_length_sec
@@ -64,7 +68,7 @@ class GameGUI:
                 {"name": "y", "label": "y [px]", "field": "y"}
             ]
             self.tag_debug_tab = ui.table(columns=tag_columns, rows=[], row_key="id")
-            self.broadcast_msg = ui.textarea("")
+            self.broadcast_msg = ui.label("No broadcast message")
 
             # self.loop_rate_indicator = ui.label("")
 
@@ -87,7 +91,7 @@ class GameGUI:
             )
             self.progress_bar = ui.circular_progress(
                 show_value=True, size="xl", min=0, max=self.match_length_sec
-            ).bind_value_from(self, "seconds_remaining")
+            ).bind_value_from(self, "int_seconds_remaining")
             self.debug_button: ui.button = ui.button(
                 "Debug Mode", on_click=self.toggle_debug, color="orange"
             )
@@ -151,6 +155,8 @@ class GameGUI:
             self.tag_debug_tab.rows = tag_rows
             if data.broadcast_msg is not None:
                 self.broadcast_msg.text = str(data.broadcast_msg)
+            else:
+                self.broadcast_msg.text = "No broadcast message"
 
         self.update_start_button(self.state)
         try:

@@ -274,7 +274,7 @@ class GameManager:
             msg = None
             if self.broadcaster is not None:
                 time_left_decisecond = (
-                    self.timer.get().total_seconds() * 1e1
+                    (self.match_length_sec - self.timer.get().total_seconds()) * 1e1
                     if self.timer.timestarted
                     else (self.match_length_sec * 1e1)
                 )
